@@ -79,7 +79,7 @@ export default function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto mb-2 w-[min(390px,calc(100%-28px))] pointer-events-auto">
-          <div className="flex items-center h-[68px] px-2 rounded-[22px] border border-white/[0.12] bg-[#0f0f0f]">
+          <div className="flex items-center h-[68px] px-2 rounded-[22px] border border-white/[0.12] bg-[#0f0f0f]/92 backdrop-blur-xl shadow-[0_16px_34px_rgba(0,0,0,0.52)]">
           {/* Left tabs */}
           {LEFT_NAV.map(({ href, labelKey, Icon }, i) =>
             navItem(href, labelKey, Icon, isActive(href, i, 0))

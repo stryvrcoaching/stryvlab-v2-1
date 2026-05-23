@@ -54,13 +54,9 @@ export default function BottomNav() {
       key={href}
       href={href}
       aria-label={t(labelKey)}
-      className={`flex items-center justify-center h-[46px] w-[46px] rounded-[14px] border transition-all duration-200 active:scale-[0.9] ${
+      className={`flex items-center justify-center flex-1 h-full transition-all duration-200 active:scale-[0.9] ${
         active ? "text-[#f2f2f2]" : "text-[#5a5a5a] hover:text-[#808080]"
       }`}
-      style={{
-        background: active ? "rgba(242,242,242,0.12)" : "rgba(255,255,255,0.04)",
-        borderColor: active ? "rgba(242,242,242,0.24)" : "rgba(255,255,255,0.08)",
-      }}
     >
       <div className="relative">
         <Icon size={active ? 30 : 27} weight={active ? "fill" : "bold"} />
@@ -80,17 +76,17 @@ export default function BottomNav() {
     <>
       <nav
         className="fixed inset-x-0 bottom-0 z-40 pointer-events-none"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto mb-2 w-[min(340px,calc(100%-40px))] pointer-events-auto">
-          <div className="flex items-center justify-center gap-2 h-[68px] px-2 rounded-[22px] border border-white/[0.12] bg-[#0f0f0f] shadow-none">
+        <div className="mx-auto mb-2 w-[min(390px,calc(100%-28px))] pointer-events-auto">
+          <div className="flex items-center h-[68px] px-2 rounded-[22px] border border-white/[0.12] bg-[#0f0f0f]">
           {/* Left tabs */}
           {LEFT_NAV.map(({ href, labelKey, Icon }, i) =>
             navItem(href, labelKey, Icon, isActive(href, i, 0))
           )}
 
           {/* Central FAB */}
-          <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex flex-col items-center justify-center flex-1 h-full">
             <button
               onClick={() => setLogOpen(true)}
               className="w-[48px] h-[48px] rounded-[14px] bg-[#f2f2f2] flex items-center justify-center active:scale-[0.9] transition-transform shadow-[0_7px_18px_rgba(0,0,0,0.45)]"

@@ -84,15 +84,8 @@ export default function BottomNav() {
         className="fixed inset-x-0 bottom-0 z-40 pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto mb-4 w-[min(420px,calc(100%-28px))] pointer-events-auto">
-          <div className="pointer-events-none mb-2 flex items-end justify-center gap-1.5 px-8">
-            <span className="h-2.5 w-2.5 rounded-full bg-white/20 blur-[0.5px]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
-            <span className="h-3 w-3 rounded-full bg-white/15 blur-[0.5px]" />
-            <span className="h-1 w-1 rounded-full bg-white/35" />
-            <span className="h-2 w-2 rounded-full bg-white/20" />
-          </div>
-          <div className="flex items-center h-[58px] px-2 rounded-[20px] border border-white/[0.1] bg-[#0f0f0f]/92 backdrop-blur-xl shadow-[0_14px_32px_rgba(0,0,0,0.5)]">
+        <div className="mx-auto mb-2 w-[min(520px,calc(100%-16px))] pointer-events-auto rounded-[22px] border border-white/[0.08] bg-[#101010]/95 backdrop-blur-md shadow-[0_12px_30px_rgba(0,0,0,0.45)]">
+          <div className="flex items-center h-[62px] px-2">
           {/* Left tabs */}
           {LEFT_NAV.map(({ href, labelKey, Icon }, i) =>
             navItem(href, labelKey, Icon, isActive(href, i, 0))
@@ -102,10 +95,10 @@ export default function BottomNav() {
           <div className="flex flex-col items-center justify-center flex-1 h-full">
             <button
               onClick={() => setLogOpen(true)}
-              className="w-[44px] h-[44px] rounded-[13px] bg-[#f2f2f2] flex items-center justify-center active:scale-[0.92] transition-transform shadow-[0_6px_16px_rgba(0,0,0,0.45)]"
+              className="w-[50px] h-[50px] rounded-full bg-[#f2f2f2] flex items-center justify-center active:scale-[0.92] transition-transform shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
               aria-label="Logger"
             >
-              <Plus size={20} weight="bold" className="text-[#080808]" />
+              <Plus size={22} weight="bold" className="text-[#080808]" />
             </button>
           </div>
 
@@ -113,7 +106,7 @@ export default function BottomNav() {
           {RIGHT_NAV.map(({ href, labelKey, Icon }, i) =>
             navItem(href, labelKey, Icon, isActive(href, i, 2))
           )}
-        </div>
+          </div>
         </div>
       </nav>
 

@@ -79,10 +79,12 @@ export default function MesurationsTab({ data, onSaved }: Props) {
       </div>
 
       {editorOpen && (
-        <div className="rounded-2xl bg-[#111111] p-3 space-y-3">
-          <div className="grid grid-cols-2 gap-2 max-h-[42vh] overflow-y-auto pr-1">
-            <input value={weightKg} onChange={(e) => setWeightKg(e.target.value)} inputMode="decimal" placeholder="Poids (kg)" className="h-9 rounded-xl bg-white/[0.05] px-3 text-[12px] text-white placeholder:text-white/30 outline-none" />
-            <div />
+        <div className="rounded-2xl border border-white/[0.08] bg-[#121212] p-4 space-y-4 shadow-[0_14px_32px_rgba(0,0,0,0.35)]">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-white/35 font-bold mb-2">Entrée du jour</p>
+            <input value={weightKg} onChange={(e) => setWeightKg(e.target.value)} inputMode="decimal" placeholder="Poids (kg)" className="h-10 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/35 outline-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto pr-1">
             {data.measureOrder.map((key) => (
               <input
                 key={key}
@@ -90,13 +92,16 @@ export default function MesurationsTab({ data, onSaved }: Props) {
                 onChange={(e) => setMeasureInputs((prev) => ({ ...prev, [key]: e.target.value }))}
                 inputMode="decimal"
                 placeholder={`${data.measureLabels[key] ?? key} (cm)`}
-                className="h-9 rounded-xl bg-white/[0.05] px-3 text-[12px] text-white placeholder:text-white/30 outline-none"
+                className="h-10 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/35 outline-none"
               />
             ))}
           </div>
-          <button onClick={saveEntry} disabled={saving} className="h-9 px-4 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.12em] disabled:opacity-50">
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setEditorOpen(false)} className="h-10 flex-1 rounded-xl border border-white/[0.12] bg-white/[0.02] text-[11px] font-bold uppercase tracking-[0.12em] text-white/65">Fermer</button>
+            <button onClick={saveEntry} disabled={saving} className="h-10 flex-1 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.12em] disabled:opacity-50">
+              {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
         </div>
       )}
 

@@ -87,54 +87,48 @@ export default function BodyDataTab({ data }: Props) {
         <MetricCard
           label="Masse musculaire"
           value={`${data.composition.muscle_mass_kg.toFixed(1)} kg`}
-          series={[]}
+          series={[{ date: data.weightSeries[data.weightSeries.length - 1]?.date ?? new Date().toISOString().slice(0, 10), value: data.composition.muscle_mass_kg }]}
           unit=" kg"
-          expandable={false}
         />
       )}
       {data.composition.skeletal_muscle_pct != null && (
         <MetricCard
           label="Masse musculaire squelettique"
           value={`${data.composition.skeletal_muscle_pct.toFixed(1)}%`}
-          series={[]}
+          series={[{ date: data.weightSeries[data.weightSeries.length - 1]?.date ?? new Date().toISOString().slice(0, 10), value: data.composition.skeletal_muscle_pct }]}
           unit="%"
-          expandable={false}
         />
       )}
       {data.composition.visceral_fat_level != null && (
         <MetricCard
           label="Graisse viscérale"
           value={`${data.composition.visceral_fat_level.toFixed(1)}`}
-          series={[]}
+          series={[{ date: data.weightSeries[data.weightSeries.length - 1]?.date ?? new Date().toISOString().slice(0, 10), value: data.composition.visceral_fat_level }]}
           unit=""
-          expandable={false}
         />
       )}
       {data.composition.body_water_pct != null && (
         <MetricCard
           label="Hydratation"
           value={`${data.composition.body_water_pct.toFixed(1)}%`}
-          series={[]}
+          series={[{ date: data.weightSeries[data.weightSeries.length - 1]?.date ?? new Date().toISOString().slice(0, 10), value: data.composition.body_water_pct }]}
           unit="%"
-          expandable={false}
         />
       )}
       {data.composition.muscle_mass_pct != null && (
         <MetricCard
           label="Masse musculaire (%)"
           value={`${data.composition.muscle_mass_pct.toFixed(1)}%`}
-          series={[]}
+          series={[{ date: data.weightSeries[data.weightSeries.length - 1]?.date ?? new Date().toISOString().slice(0, 10), value: data.composition.muscle_mass_pct }]}
           unit="%"
-          expandable={false}
         />
       )}
       {data.composition.bone_mass_kg != null && (
         <MetricCard
           label="Masse osseuse"
           value={`${data.composition.bone_mass_kg.toFixed(1)} kg`}
-          series={[]}
+          series={[{ date: data.weightSeries[data.weightSeries.length - 1]?.date ?? new Date().toISOString().slice(0, 10), value: data.composition.bone_mass_kg }]}
           unit=" kg"
-          expandable={false}
         />
       )}
     </div>

@@ -10,8 +10,6 @@ import type { DayDraft } from '@/lib/nutrition/types'
 import type { CarbCyclingResult } from '@/lib/formulas/carbCycling'
 import type { TrainingWeekSchedule } from '@/lib/nutrition/training-week-schedule'
 import TrainingWeekSchedulePanel from './TrainingWeekSchedulePanel'
-import ProtocolScheduleHeatmap from './ProtocolScheduleHeatmap'
-import type { ScheduleSlotDraft } from './useNutritionStudio'
 
 interface Props {
   protocolName: string
@@ -36,8 +34,6 @@ interface Props {
   trainingWeekSchedule?: TrainingWeekSchedule | null
   selectedScheduleDow?: number | null
   onSelectScheduleDow?: (dow: number) => void
-  scheduleSlots: ScheduleSlotDraft[]
-  onScheduleSlotsChange: (slots: ScheduleSlotDraft[]) => void
 }
 
 function NumberField({ label, value, onChange, unit }: {
@@ -71,8 +67,6 @@ export default function ProtocolCanvas({
   trainingWeekSchedule = null,
   selectedScheduleDow = null,
   onSelectScheduleDow,
-  scheduleSlots,
-  onScheduleSlotsChange,
 }: Props) {
   const [editingName, setEditingName] = useState(false)
   const [tempName, setTempName] = useState(protocolName)
@@ -207,14 +201,6 @@ export default function ProtocolCanvas({
           protocolDayNames={days.map((d) => d.name)}
           activeDow={selectedScheduleDow}
           onSelectDow={onSelectScheduleDow}
-        />
-
-        <ProtocolScheduleHeatmap
-          days={days}
-          activeDayIndex={activeDayIndex}
-          scheduleSlots={scheduleSlots}
-          onScheduleSlotsChange={onScheduleSlotsChange}
-          trainingWeekSchedule={trainingWeekSchedule}
         />
 
         {/* Day cards overview */}

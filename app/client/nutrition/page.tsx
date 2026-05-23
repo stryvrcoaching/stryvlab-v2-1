@@ -3,33 +3,14 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { computeNutritionAlerts } from '@/lib/client/smart/nutritionAlerts'
-import type { SmartNutritionPrep } from '@/components/client/smart/SmartNutritionPrepList'
 import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
 import type { NutritionMeal } from '@/lib/nutrition/food-items'
 import type { GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
 import { type ClientLang } from '@/lib/i18n/clientTranslations'
 import { computeMacroEnergy } from '@/lib/nutrition/energy'
-import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
-import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
-import { detectCurrentPhase, getCycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
-import type { CyclePhase, CycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
-import { getCycleStateFromLogs } from '@/lib/cycle/cycleEngine'
-import type { CycleState, CycleLog } from '@/lib/cycle/cycleEngine'
 import NutritionClientPage from './NutritionClientPage'
 
 type SearchParams = { date?: string }
-
-function inferTrainingDay(protocolDay: Record<string, unknown> | null): boolean {
-  if (!protocolDay) return false
-  const name = String(protocolDay.name ?? '').toLowerCase()
-  const cycle = String(protocolDay.carb_cycle_type ?? '').toLowerCase()
-  return (
-    name.includes('entraînement') ||
-    name.includes('entrainement') ||
-    name.includes('training') ||
-    cycle.includes('high')
-  )
-}
 
 function svc() {
   return createServiceClient(
@@ -45,7 +26,6 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
 
   const client = await resolveClientFromUser(user.id, user.email, svc(), 'id, gender')
   if (!client) return null
-  const isFemale = (client as { gender?: string | null }).gender === 'female'
 
   const date = searchParams.date ?? computePhysiologicalDate(new Date())
   const dayStart = `${date}T00:00:00Z`
@@ -53,10 +33,10 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const clientId = client.id
 
   // ── Parallel fetches (all direct Supabase, no loopback HTTP) ──────────────
-  const [protoResult, mealsResult, prepsResult, waterResult, weightResult, checkinWeightResult, trendResult, streakResult, prefsResult, cycleResult, cycleLogsResult] = await Promise.allSettled([
+  const [protoResult, mealsResult, waterResult, weightResult, trendResult, streakResult, prefsResult] = await Promise.allSettled([
     svc()
       .from('nutrition_protocols')
-      .select('tdee_adaptive, tdee_data_source, schedule_start_date, nutrition_protocol_days(position, name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
+      .select('tdee_adaptive, tdee_data_source, nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
       .eq('client_id', clientId)
       .eq('status', 'shared')
       .order('created_at', { ascending: false })
@@ -88,15 +68,6 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       .gte('logged_at', dayStart)
       .lte('logged_at', dayEnd),
 
-    svc()
-      .from('client_nutrition_preps')
-      .select('id, physiological_date, title, meal_type, meal_slot, variant_group_id, scenario_key, scenario_label, is_active, status, entries, total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g, planned_for')
-      .eq('client_id', clientId)
-      .eq('physiological_date', date)
-      .eq('status', 'planned')
-      .eq('scenario_key', 'default')
-      .order('created_at', { ascending: false }),
-
     // Latest body weight from assessments
     svc()
       .from('assessment_responses')
@@ -105,16 +76,6 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       .eq('field_key', 'weight_kg')
       .not('numeric_value', 'is', null)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-
-    // Latest body weight from client check-ins (preferred when available)
-    svc()
-      .from('client_daily_checkins')
-      .select('weight_kg')
-      .eq('client_id', clientId)
-      .not('weight_kg', 'is', null)
-      .order('date', { ascending: false })
       .limit(1)
       .maybeSingle(),
 
@@ -155,56 +116,17 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       .select('language')
       .eq('client_id', clientId)
       .maybeSingle(),
-
-    // Last period date for cycle sync (female only)
-    isFemale
-      ? svc()
-          .from('assessment_responses')
-          .select('value_text, numeric_value')
-          .eq('client_id', clientId)
-          .eq('field_key', 'menstrual_cycle')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-
-    // Cycle logs for gold-standard engine (female only)
-    isFemale
-      ? svc()
-          .from('menstrual_cycle_logs')
-          .select('period_start_date, period_end_date, computed_cycle_length_days')
-          .eq('client_id', clientId)
-          .order('period_start_date', { ascending: false })
-          .limit(7)
-      : Promise.resolve({ data: null, error: null }),
   ])
 
   // ── Body weight ───────────────────────────────────────────────────────────
   const bodyWeightRow = weightResult.status === 'fulfilled' ? weightResult.value.data : null
-  const checkinWeightRow = checkinWeightResult.status === 'fulfilled' ? checkinWeightResult.value.data : null
-  const bodyWeightKg = checkinWeightRow?.weight_kg != null
-    ? Number(checkinWeightRow.weight_kg)
-    : (bodyWeightRow?.numeric_value ? Number(bodyWeightRow.numeric_value) : null)
+  const bodyWeightKg = bodyWeightRow?.numeric_value ? Number(bodyWeightRow.numeric_value) : null
 
   // ── Protocol day ──────────────────────────────────────────────────────────
   const protoData = protoResult.status === 'fulfilled' ? protoResult.value.data : null
-  const protocolDay = resolveProtocolDayByDate(
-    date,
-    (protoData as any)?.schedule_start_date ?? null,
-    (protoData?.nutrition_protocol_days as any) ?? [],
-    (protoData?.nutrition_protocol_schedule_slots as any) ?? [],
-  )
+  const protocolDay = (protoData?.nutrition_protocol_days as any)?.[0] ?? null
   const tdeeAdaptive = (protoData as any)?.tdee_adaptive ?? null
   const tdeeDataSource = (protoData as any)?.tdee_data_source ?? null
-  const protocolDays: Array<{ name: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; carb_cycle_type?: string | null }> =
-    ((protoData?.nutrition_protocol_days as any[]) ?? []).map((d: any) => ({
-      name:            String(d.name ?? ''),
-      kcal:            Number(d.calories ?? 0),
-      protein_g:       Number(d.protein_g ?? 0),
-      carbs_g:         Number(d.carbs_g ?? 0),
-      fat_g:           Number(d.fat_g ?? 0),
-      carb_cycle_type: d.carb_cycle_type ?? null,
-    }))
 
   const td = protocolDay
   const target: NutritionMacros = {
@@ -228,7 +150,6 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
     entries: m.nutrition_entries ?? [],
     nutrition_entries: undefined,
   }))
-  const preps: SmartNutritionPrep[] = (prepsResult.status === 'fulfilled' ? (prepsResult.value.data ?? []) : []) as SmartNutritionPrep[]
   const water = waterResult.status === 'fulfilled' ? (waterResult.value.data ?? []) : []
 
   const consumedBase = meals.reduce(
@@ -242,24 +163,6 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   )
   const water_ml = water.reduce((s, w) => s + Number(w.amount_ml ?? 0), 0)
   const consumed: NutritionMacros = { ...consumedBase, water_ml }
-  const planningPrepTotals = preps
-    .filter(prep => prep.is_active)
-    .reduce(
-      (acc, prep) => ({
-        kcal: acc.kcal + Number(prep.total_calories ?? 0),
-        protein_g: acc.protein_g + Number(prep.total_protein_g ?? 0),
-        carbs_g: acc.carbs_g + Number(prep.total_carbs_g ?? 0),
-        fat_g: acc.fat_g + Number(prep.total_fat_g ?? 0),
-      }),
-      { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
-    )
-  const planningConsumed: NutritionMacros = {
-    kcal: consumed.kcal + planningPrepTotals.kcal,
-    protein_g: consumed.protein_g + planningPrepTotals.protein_g,
-    carbs_g: consumed.carbs_g + planningPrepTotals.carbs_g,
-    fat_g: consumed.fat_g + planningPrepTotals.fat_g,
-    water_ml: consumed.water_ml,
-  }
 
   // ── IA alerts (pure fn, no HTTP) ──────────────────────────────────────────
   const hasLunchLog = meals.some(m => m.meal_type === 'lunch')
@@ -322,68 +225,19 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const rawLang = prefsResult.status === 'fulfilled' ? (prefsResult.value as any)?.data?.language : null
   const lang: ClientLang = ['fr', 'en', 'es'].includes(rawLang) ? (rawLang as ClientLang) : 'fr'
 
-  // ── Cycle Sync (female only) ──────────────────────────────────────────────
-  let cycleSyncPhase: CyclePhase | null = null
-  let cycleSyncAdjustment: CycleSyncAdjustment | null = null
-  let cycleDay: number | null = null
-
-  if (isFemale) {
-    const cycleRow = cycleResult.status === 'fulfilled' ? (cycleResult.value as any)?.data : null
-    if (cycleRow) {
-      // value_text may be ISO date (last period) or numeric day string
-      const raw = cycleRow.value_text ?? null
-      const numericDay = cycleRow.numeric_value ? Number(cycleRow.numeric_value) : null
-
-      if (numericDay && numericDay >= 1) {
-        cycleDay = numericDay
-      } else if (raw && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
-        // Compute cycle day from last period date
-        const lastPeriod = new Date(raw)
-        const todayDate = new Date(date)
-        const diffMs = todayDate.getTime() - lastPeriod.getTime()
-        const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000))
-        cycleDay = diffDays >= 0 ? (diffDays % 28) + 1 : null
-      }
-    }
-    if (cycleDay !== null) {
-      cycleSyncPhase = detectCurrentPhase(cycleDay)
-      cycleSyncAdjustment = getCycleSyncAdjustment(cycleSyncPhase)
-    }
-  }
-
-  // ── CycleState v2 (gold-standard engine) ─────────────────────────────────
-  let cycleState: CycleState | null = null
-  if (isFemale) {
-    const rawCycleLogs = cycleLogsResult.status === 'fulfilled' ? ((cycleLogsResult.value as any)?.data ?? []) : []
-    const cycleLogs: CycleLog[] = rawCycleLogs
-    const bilanRow = cycleResult.status === 'fulfilled' ? (cycleResult.value as any)?.data : null
-    const bilanValue: string | null = bilanRow?.value_text ?? null
-    cycleState = getCycleStateFromLogs(cycleLogs, bilanValue)
-  }
-
   // Day type badge for TopBar
-  const isTrainingDay = inferTrainingDay((protocolDay as Record<string, unknown>) ?? null)
-  const dayTypeLabel = String((protocolDay as Record<string, unknown> | null)?.name ?? 'Repos')
-  const dayTypeBadge = (
-    <span
-      className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg"
-      style={{
-        background: isTrainingDay ? NUTRITION_UI_COLORS.trainingDayBg : NUTRITION_UI_COLORS.restDayBg,
-        color: isTrainingDay ? NUTRITION_UI_COLORS.trainingDay : NUTRITION_UI_COLORS.restDay,
-      }}
-    >
-      {dayTypeLabel}
+  const dayTypeBadge = protocolDay?.name ? (
+    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#222222] text-[#b0b0b0]">
+      {protocolDay.name}
     </span>
-  )
+  ) : null
 
   return (
     <NutritionClientPage
       date={date}
       target={target}
       consumed={consumed}
-      planningConsumed={planningConsumed}
       meals={meals}
-      preps={preps}
       alerts={alerts}
       trend={trend}
       loggedDates={loggedDatesSet}
@@ -393,11 +247,6 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       protocolDay={protocolDay}
       lang={lang}
       dayTypeBadge={dayTypeBadge}
-      cycleSyncPhase={cycleSyncPhase}
-      cycleSyncAdjustment={cycleSyncAdjustment}
-      cycleDay={cycleDay}
-      cycleState={cycleState}
-      protocolDays={protocolDays}
     />
   )
 }

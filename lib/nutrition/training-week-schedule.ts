@@ -57,8 +57,7 @@ export function sessionDaysOfWeek(
   const multi = session.days_of_week?.filter(
     (d) => typeof d === "number" && d >= 1 && d <= 7,
   );
-  if (multi && multi.length > 0)
-    return [...new Set(multi)].sort((a, b) => a - b);
+  if (multi && multi.length > 0) return [...new Set(multi)].sort((a, b) => a - b);
   if (
     session.day_of_week != null &&
     session.day_of_week >= 1 &&
@@ -73,7 +72,9 @@ function classifySessions(
   sessions: ProgramSessionScheduleInput[],
 ): WeekdayKind {
   if (sessions.length === 0) return "rest";
-  const withExercises = sessions.filter((s) => (s.exercises?.length ?? 0) > 0);
+  const withExercises = sessions.filter(
+    (s) => (s.exercises?.length ?? 0) > 0,
+  );
   if (withExercises.length > 0) return "training";
   return "rest_with_activity";
 }
@@ -164,12 +165,19 @@ export function suggestNutritionDayName(
 
   if (kind === "training") {
     return (
-      pick(["entraînement", "entrainement", "training", "sport", "muscu"]) ??
-      null
+      pick([
+        "entraînement",
+        "entrainement",
+        "training",
+        "sport",
+        "muscu",
+      ]) ?? null
     );
   }
 
-  return pick(["repos", "rest", "recovery", "récup", "recup", "off"]) ?? null;
+  return (
+    pick(["repos", "rest", "recovery", "récup", "recup", "off"]) ?? null
+  );
 }
 
 /** Map Supabase nested `program_exercises` into schedule input shape. */

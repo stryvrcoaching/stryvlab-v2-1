@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { computeMacroEnergy } from '@/lib/nutrition/energy'
-import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 
 function svc() {
   return createServiceClient(
@@ -29,11 +28,13 @@ export async function GET(_req: NextRequest) {
 
   const { data: proto } = await svc()
     .from('nutrition_protocols')
-    .select('schedule_start_date, nutrition_protocol_days(position, calories), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
+    .select('nutrition_protocol_days(calories)')
     .eq('client_id', cc.id)
     .eq('status', 'shared')
     .limit(1)
     .maybeSingle()
+
+  const target = Number((proto?.nutrition_protocol_days as any)?.[0]?.calories ?? 2400)
 
   const { data: meals } = await svc()
     .from('nutrition_meals')
@@ -54,15 +55,6 @@ export async function GET(_req: NextRequest) {
       })
   }
 
-  const trend = days.map((d) => {
-    const day = resolveProtocolDayByDate(
-      d,
-      (proto as any)?.schedule_start_date ?? null,
-      (proto?.nutrition_protocol_days as any) ?? [],
-      (proto?.nutrition_protocol_schedule_slots as any) ?? [],
-    )
-    const target = Number((day as any)?.calories ?? 2400)
-    return { date: d, consumed: totals[d], target }
-  })
+  const trend = days.map(d => ({ date: d, consumed: totals[d], target }))
   return NextResponse.json({ trend })
 }

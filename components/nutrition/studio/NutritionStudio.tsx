@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useState, useCallback, useEffect } from "react";
-import { detectCurrentPhase } from "@/lib/nutrition/engine/cycleSync";
+import { useRef, useMemo } from "react";
 import { Eye, Save, Send, Loader2 } from "lucide-react";
 import { useNutritionStudio } from "./useNutritionStudio";
 import ClientIntelligencePanel from "./ClientIntelligencePanel";
@@ -21,87 +20,9 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
   const router = useRouter();
   const studio = useNutritionStudio(clientId, existingProtocol);
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
-
-  // ─── Resizable columns ────────────────────────────────────────────────────
-  const [col1Width, setCol1Width] = useState(22); // % of total
-  const [col3Width, setCol3Width] = useState(28); // % of total
-  const containerRef = useRef<HTMLDivElement>(null);
-  const draggingRef = useRef<"left" | "right" | null>(null);
-  const startXRef = useRef(0);
-  const startCol1Ref = useRef(22);
-  const startCol3Ref = useRef(28);
-
-  const onMouseDownLeft = useCallback((e: React.MouseEvent) => {
-    draggingRef.current = "left";
-    startXRef.current = e.clientX;
-    startCol1Ref.current = col1Width;
-    e.preventDefault();
-  }, [col1Width]);
-
-  const onMouseDownRight = useCallback((e: React.MouseEvent) => {
-    draggingRef.current = "right";
-    startXRef.current = e.clientX;
-    startCol3Ref.current = col3Width;
-    e.preventDefault();
-  }, [col3Width]);
-
-  useEffect(() => {
-    function onMouseMove(e: MouseEvent) {
-      if (!draggingRef.current || !containerRef.current) return;
-      const totalW = containerRef.current.offsetWidth;
-      const dx = e.clientX - startXRef.current;
-      const dPct = (dx / totalW) * 100;
-      if (draggingRef.current === "left") {
-        setCol1Width(Math.min(Math.max(startCol1Ref.current + dPct, 16), 32));
-      } else {
-        setCol3Width(Math.min(Math.max(startCol3Ref.current - dPct, 20), 38));
-      }
-    }
-    function onMouseUp() { draggingRef.current = null; }
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
-
   const clientName = studio.clientData?.name ?? "Client";
-  const isFemale = studio.clientData?.gender === "female";
   const leanMass =
     studio.clientData?.lean_mass_kg ?? studio.macroResult?.leanMass ?? null;
-
-  // Compute current cycle day from menstrual_cycle field (ISO date or numeric)
-  const currentCycleDay = useMemo(() => {
-    if (!isFemale) return null
-    const raw = studio.clientData?.menstrual_cycle ?? null
-    if (!raw) return null
-    const num = Number(raw)
-    if (!isNaN(num) && num >= 1) return num
-    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
-      const lastPeriod = new Date(raw)
-      const diffMs = Date.now() - lastPeriod.getTime()
-      const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000))
-      return diffDays >= 0 ? (diffDays % 28) + 1 : null
-    }
-    return null
-  }, [isFemale, studio.clientData?.menstrual_cycle])
-
-  // Build NutritionMacros shape for CycleSyncPhaseGrid base display
-  const baseMacrosForCycleSync = useMemo(() => {
-    if (!studio.macroResult) return null
-    return {
-      kcal:      studio.macroResult.calories,
-      protein_g: studio.macroResult.macros.p,
-      carbs_g:   studio.macroResult.macros.c,
-      fat_g:     studio.macroResult.macros.f,
-      water_ml:  0,
-    }
-  }, [studio.macroResult])
   const clientIntelligenceMacroResult = studio.macroResult
     ? {
         leanMass: studio.macroResult.leanMass,
@@ -156,17 +77,14 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
 
   useClientTopBar("Nutrition Studio", rightContent);
 
-  const col2Width = 100 - col1Width - col3Width;
-
   return (
-    <main className="h-[calc(100vh-88px)] bg-[#121212] flex flex-col overflow-hidden">
-      <div ref={containerRef} className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
-        {/* Col 1 — Client Intelligence */}
-        <div style={{ flexGrow: col1Width, flexShrink: 1, flexBasis: 0, minWidth: 200, overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
+    <main className="h-screen bg-[#121212] flex flex-col overflow-hidden">
+      <div className="flex-1 flex min-h-0">
+        {/* Col 1 — Client Intelligence (300px fixed) */}
+        <div className="w-[300px] shrink-0 border-r border-white/[0.04] overflow-hidden">
           <ClientIntelligencePanel
             clientId={clientId}
             clientData={studio.clientData}
-            onClientDataChange={studio.setClientData}
             loading={studio.clientLoading}
             trainingConfig={studio.trainingConfig}
             lifestyleConfig={studio.lifestyleConfig}
@@ -182,61 +100,45 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             }
             macroResult={clientIntelligenceMacroResult}
             submissions={studio.allSubmissions}
-            selectedSubmissionId={studio.resolvedSubmissionId ?? studio.selectedSubmissionId}
+            selectedSubmissionId={studio.selectedSubmissionId}
             onSubmissionChange={studio.setSelectedSubmissionId}
             dataSource={studio.dataSource}
           />
         </div>
 
-        {/* Resize handle left */}
-        <div
-          onMouseDown={onMouseDownLeft}
-          className="w-1 flex-none bg-white/[0.06] hover:bg-[#1f8a65]/50 cursor-col-resize transition-colors active:bg-[#1f8a65]"
-        />
-
-        {/* Col 2 — Calculation Engine */}
-        <div style={{ flexGrow: col2Width, flexShrink: 1, flexBasis: 0, minWidth: 0, overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {/* Col 2 — Calculation Engine (flex) */}
+        <div className="flex-1 border-r border-white/[0.04] overflow-hidden min-w-0">
           <CalculationEngine
             goal={studio.goal}
-            onGoalChange={studio.setGoalWithPreset}
+            onGoalChange={studio.setGoal}
             calorieAdjustPct={studio.calorieAdjustPct}
             onCalorieAdjustChange={studio.setCalorieAdjustPct}
             proteinOverride={studio.proteinOverride}
             onProteinOverrideChange={studio.setProteinOverride}
-            macroOverrides={studio.macroOverrides}
-            onMacroOverridesChange={studio.setMacroOverrides}
             macroResult={studio.macroResult}
             goalCalories={studio.goalCalories}
+            carbCycling={studio.carbCycling}
+            onCarbCyclingChange={(patch) =>
+              studio.setCarbCycling((prev) => ({ ...prev, ...patch }))
+            }
+            ccResult={studio.ccResult}
             hydrationClimate={studio.hydrationClimate}
             onHydrationClimateChange={studio.setHydrationClimate}
             hydrationPhase={studio.hydrationPhase}
             onHydrationPhaseChange={studio.setHydrationPhase}
             hydrationLiters={studio.hydrationLiters}
             leanMass={leanMass}
-            bodyWeight={studio.clientData?.weight_kg ?? null}
             tdeeAdaptive={studio.tdeeAdaptive}
             tdeeAdaptiveAt={studio.tdeeAdaptiveAt}
             tdeeDataSource={studio.tdeeDataSource}
             tdeeHistory={studio.tdeeHistory}
             applyAdaptiveTdee={studio.applyAdaptiveTdee}
             applyingAdaptive={studio.applyingAdaptive}
-            isFemale={isFemale}
-            currentCycleDay={currentCycleDay}
-            baseMacrosForCycleSync={baseMacrosForCycleSync}
-            cycleState={studio.cycleState}
-            cycleSyncEnabled={studio.cycleSyncEnabled}
-            onCycleSyncEnabledChange={studio.setCycleSyncEnabled}
           />
         </div>
 
-        {/* Resize handle right */}
-        <div
-          onMouseDown={onMouseDownRight}
-          className="w-1 flex-none bg-white/[0.06] hover:bg-[#1f8a65]/50 cursor-col-resize transition-colors active:bg-[#1f8a65]"
-        />
-
-        {/* Col 3 — Protocol Canvas */}
-        <div style={{ flexGrow: col3Width, flexShrink: 1, flexBasis: 0, minWidth: 240, overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {/* Col 3 — Protocol Canvas (480px fixed — expanded from 380px) */}
+        <div className="w-[480px] shrink-0 overflow-hidden">
           <ProtocolCanvas
             loading={studio.clientLoading}
             protocolName={studio.protocolName}
@@ -248,16 +150,18 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             onAddDay={studio.addDay}
             onRemoveDay={studio.removeDay}
             onInjectMacros={studio.injectMacrosToDay}
+            onInjectCCHigh={studio.injectCCHighToDay}
+            onInjectCCLow={studio.injectCCLowToDay}
             onInjectHydration={studio.injectHydrationToDay}
             onInjectAll={studio.injectAllToDay}
             hasMacroResult={studio.macroResult !== null}
+            hasCcResult={studio.ccResult !== null}
+            ccResult={studio.ccResult}
             hasHydration={studio.hydrationLiters !== null}
             coherenceScore={studio.coherenceScore}
             trainingWeekSchedule={studio.trainingWeekSchedule}
             selectedScheduleDow={studio.selectedScheduleDow}
             onSelectScheduleDow={studio.setSelectedScheduleDow}
-            scheduleSlots={studio.scheduleSlots}
-            onScheduleSlotsChange={studio.setScheduleSlots}
           />
         </div>
       </div>

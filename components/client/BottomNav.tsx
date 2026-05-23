@@ -84,7 +84,14 @@ export default function BottomNav() {
         className="fixed inset-x-0 bottom-0 z-40 pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto mb-4 w-[min(360px,calc(100%-36px))] pointer-events-auto">
+        <div className="mx-auto mb-4 w-[min(420px,calc(100%-28px))] pointer-events-auto">
+          <div className="pointer-events-none mb-2 flex items-end justify-center gap-1.5 px-8">
+            <span className="h-2.5 w-2.5 rounded-full bg-white/20 blur-[0.5px]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+            <span className="h-3 w-3 rounded-full bg-white/15 blur-[0.5px]" />
+            <span className="h-1 w-1 rounded-full bg-white/35" />
+            <span className="h-2 w-2 rounded-full bg-white/20" />
+          </div>
           <div className="flex items-center h-[58px] px-2 rounded-[20px] border border-white/[0.1] bg-[#0f0f0f]/92 backdrop-blur-xl shadow-[0_14px_32px_rgba(0,0,0,0.5)]">
           {/* Left tabs */}
           {LEFT_NAV.map(({ href, labelKey, Icon }, i) =>

@@ -25,14 +25,20 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
 
   function refresh() {
     fetch("/api/client/chat/today-strip")
-      .then(r => r.json())
-      .then(setData)
-      .catch(() => {})
+      .then(r => r.ok ? r.json() : null)
+      .then(res => {
+        if (res && !res.error && res.checkin) {
+          setData(res)
+        } else {
+          setData(null)
+        }
+      })
+      .catch(() => setData(null))
   }
 
   useEffect(() => { refresh() }, [])
 
-  if (!data) {
+  if (!data || !data.checkin) {
     return (
       <div className="shrink-0 h-[44px] bg-[#080808] flex items-center px-4 gap-2">
         {[80, 120, 100].map(w => (
@@ -42,12 +48,12 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
     )
   }
 
-  const morningDone = data.checkin.morning
-  const eveningDone = data.checkin.evening
+  const morningDone = data.checkin?.morning ?? false
+  const eveningDone = data.checkin?.evening ?? false
   const checkinDone = morningDone && eveningDone
   const pendingCount = Number(!morningDone) + Number(!eveningDone)
-  const calPct = data.calories.target > 0 ? Math.min(data.calories.logged / data.calories.target, 1) : 0
-  const waterPct = data.water.target > 0 ? Math.min(data.water.logged / data.water.target, 1) : 0
+  const calPct = data.calories?.target > 0 ? Math.min((data.calories?.logged ?? 0) / data.calories.target, 1) : 0
+  const waterPct = data.water?.target > 0 ? Math.min((data.water?.logged ?? 0) / data.water.target, 1) : 0
 
   return (
     <>

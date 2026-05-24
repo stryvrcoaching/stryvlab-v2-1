@@ -80,7 +80,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Vérification du statut client (accès suspendu)
+  // Vérification du statut client (accès suspendu ou inexistant)
   if (isClientProtected && user) {
     const serviceSupabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -96,9 +96,16 @@ export async function updateSession(request: NextRequest) {
       .from('coach_clients')
       .select('status')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (clientRecord?.status === 'suspended') {
+    if (!clientRecord) {
+      console.log('[middleware] clientRecord not found for client protected route, redirecting to /dashboard')
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    if (clientRecord.status === 'suspended') {
       const url = request.nextUrl.clone()
       url.pathname = '/client/acces-suspendu'
       return NextResponse.redirect(url)

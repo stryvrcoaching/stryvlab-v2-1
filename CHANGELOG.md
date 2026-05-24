@@ -59,6 +59,9 @@ FEATURE: /api/client/body-data extended with bodyFatSeries, leanMassSeries, meas
 
 ## 2026-05-24
 
+FIX: Update all email templates and branding tokens in mailer.ts to conform to Design System V4.0 monochrome premium style (replace #ffe01e with #f2f2f2)
+FIX: Redirect authenticated users without client profile attempting to access client-protected routes back to /dashboard in middleware
+FIX: Make client home chat screen robust against missing `checkin` object in `today-strip` API response to prevent runtime "Cannot read properties of undefined (reading 'morning')" crash when logged in as a non-client.
 FIX: Select nutrition protocol day by physiological date instead of always using the first protocol day
 FIX: Localize /client/nutrition header date and classify protocol day with explicit carb-cycle / cycle phase badge
 FIX: ChatInputBar voice icon now records speech directly into the chat input field instead of opening the nutrition voice sheet

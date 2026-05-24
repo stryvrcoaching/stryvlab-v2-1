@@ -113,7 +113,13 @@ export default function ChatPage({
         // Refresh today strip to update check-in status
         fetch("/api/client/chat/today-strip")
           .then((r) => r.json())
-          .then(setTodayData)
+          .then((todayRaw) => {
+            if (todayRaw && !todayRaw.error && todayRaw.checkin) {
+              setTodayData(todayRaw);
+            } else {
+              setTodayData(null);
+            }
+          })
           .catch(() => {});
       } catch {
         // Silent fail — check-in was saved
@@ -132,14 +138,18 @@ export default function ChatPage({
     ])
       .then(([msgData, todayRaw]) => {
         setMessages(msgData.messages ?? []);
-        setTodayData(todayRaw);
+        if (todayRaw && !todayRaw.error && todayRaw.checkin) {
+          setTodayData(todayRaw);
+        } else {
+          setTodayData(null);
+        }
         setInitialized(true);
       })
       .catch(() => setInitialized(true));
   }, []);
 
   const handleCheckinClick = useCallback(() => {
-    if (!todayData) return;
+    if (!todayData || !todayData.checkin) return;
     const currentHour = new Date().getHours();
     const chatSessions = [
       {

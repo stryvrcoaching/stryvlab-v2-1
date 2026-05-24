@@ -33,10 +33,10 @@ const FROM = `STRYVR <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://stryvlab.com";
 
 const DS = {
-  bg: "#0d0d0d",
-  card: "#161616",
-  accent: "#ffe01e",
-  accentText: "#0d0d0d",
+  bg: "#080808",
+  card: "#111111",
+  accent: "#f2f2f2",
+  accentText: "#080808",
   white: "#ffffff",
   textMuted: "rgba(255,255,255,0.60)",
   textVeryMuted: "rgba(255,255,255,0.35)",
@@ -82,7 +82,7 @@ function emailTemplate({
             ${senderLabel ? `<span style="font-size:11px;color:${DS.textVeryMuted};font-weight:500;">${senderLabel}</span>` : ""}
           </td>
           <td style="text-align:right;vertical-align:middle;">
-            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ffe01e;"></span>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f2f2f2;"></span>
           </td>
         </tr>
       </table>
@@ -562,15 +562,15 @@ export async function sendBetaWaitlistEmail(
     : `Tu es inscrit en tant qu'<strong style="color:${DS.white};">Athlète</strong> sur la liste bêta STRYVR. On te contacte en premier au lancement pour accéder à ton coach physiologique personnel.`;
 
   const whatToExpect = isCoach
-    ? `<div style="background:rgba(245,216,0,0.06);border:1px solid rgba(245,216,0,0.2);border-radius:10px;padding:20px 24px;margin-bottom:24px;">
-        <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#F5D800;margin:0 0 12px;">EN TANT QUE BÊTA TESTEUR COACH</p>
+    ? `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:20px 24px;margin-bottom:24px;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f2f2f2;margin:0 0 12px;">EN TANT QUE BÊTA TESTEUR COACH</p>
         <p style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin:0 0 8px;">✦ Accès gratuit complet à la plateforme coach</p>
         <p style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin:0 0 8px;">✦ Génération intelligente de programmes pour tes clients</p>
         <p style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin:0 0 8px;">✦ Questionnaires de feedback courts après chaque fonctionnalité</p>
         <p style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin:0;">✦ Accès direct à l'équipe pour partager ton retour</p>
       </div>`
-    : `<div style="background:rgba(245,216,0,0.06);border:1px solid rgba(245,216,0,0.2);border-radius:10px;padding:20px 24px;margin-bottom:24px;">
-        <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#F5D800;margin:0 0 12px;">EN TANT QUE BÊTA TESTEUR ATHLÈTE</p>
+    : `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:20px 24px;margin-bottom:24px;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f2f2f2;margin:0 0 12px;">EN TANT QUE BÊTA TESTEUR ATHLÈTE</p>
         <p style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin:0 0 8px;">✦ Accès gratuit complet à l'app STRYVR</p>
         <p style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin:0 0 8px;">✦ Suivi physiologique personnalisé dès le premier jour</p>
         <p style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin:0 0 8px;">✦ Questionnaires de feedback courts — 2 min par semaine</p>

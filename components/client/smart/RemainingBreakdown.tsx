@@ -1,7 +1,8 @@
+'use client'
+
 import type { NutritionMacros } from './SmartNutritionWidget'
 import { computeNutritionBalance } from '@/lib/nutrition/balance'
 import { computeActionableRemaining } from '@/lib/nutrition/actionable-remaining'
-import { suggestFoodsFromBalance } from '@/lib/nutrition/recommendations'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 import { useClientT } from '../ClientI18nProvider'
 
@@ -47,13 +48,11 @@ export default function RemainingBreakdown({
   target,
   gender,
   bodyWeightKg,
-  onCompose,
 }: {
   consumed: NutritionMacros
   target: NutritionMacros
   gender?: string | null
   bodyWeightKg?: number | null
-  onCompose?: () => void
 }) {
   const { t } = useClientT()
   const informativeBalance = computeNutritionBalance(consumed, target)
@@ -75,12 +74,6 @@ export default function RemainingBreakdown({
     fat_g: actionable.overflow.fat_g,
     water_ml: Math.max(0, consumed.water_ml - target.water_ml),
   }
-  const suggestions = suggestFoodsFromBalance({
-    remaining,
-    overflow,
-    remainingCaloriesNet: actionable.actionableRemaining.calories,
-  })
-
   const cards: DeltaCard[] = [
     {
       key: 'protein',
@@ -150,44 +143,25 @@ export default function RemainingBreakdown({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {remainingCards.length > 0 ? (
-          remainingCards.map(card => (
-            <div key={card.key} className="rounded-2xl bg-white/[0.03] p-3">
-              <div className="text-[10px] uppercase tracking-[0.1em] text-white/40 font-bold">{card.label}</div>
-              <div className="mt-1 text-[20px] font-black tabular-nums" style={{ color: card.accent }}>
-                {formatValue(card.remaining, card.unit)}
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        {cards.map(card => {
+          const isOverflow = card.overflow >= (card.unit === 'L' ? 0.25 : 1)
+          const displayValue = isOverflow ? card.overflow : card.remaining
+          const isNegative = isOverflow
+          const textColor = isNegative ? '#ef4444' : card.accent
+          
+          return (
+            <div key={card.key} className="rounded-2xl bg-white/[0.03] p-3 text-center">
+              <div className="text-[9px] uppercase tracking-[0.1em] text-white/40 font-bold">
+                {card.shortLabel}
               </div>
-              <div className="text-[10px] text-white/35 mt-1">
-                encore utiles
+              <div className="mt-1.5 text-[16px] font-black tabular-nums" style={{ color: textColor }}>
+                {isNegative ? '+' : ''}{formatValue(displayValue, card.unit)}
               </div>
             </div>
-          ))
-        ) : (
-          <div className="col-span-2 rounded-2xl bg-[#111111] p-3">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-[#e0e0e0] font-bold">Bonne zone</div>
-            <div className="mt-1 text-[13px] text-white/75 leading-relaxed">
-              {t("nutrition.nomacro.lag")}
-            </div>
-          </div>
-        )}
+          )
+        })}
       </div>
-
-      {overflowCards.length > 0 && (
-        <div className="mt-3 rounded-2xl bg-[#111111] p-3">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-[#e0e0e0] font-bold">À freiner</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {overflowCards.map(card => (
-              <div
-                key={card.key}
-                className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold tabular-nums text-[#b0b0b0]"
-              >
-                {card.label} +{formatValue(card.overflow, card.unit)}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {remainingCaloriesFromMacros > 0 && (
         <div className="mt-3 rounded-2xl bg-white/[0.025] px-3 py-2.5 flex items-center justify-between gap-3">
@@ -200,39 +174,6 @@ export default function RemainingBreakdown({
         </div>
       )}
 
-      {suggestions.length > 0 && (
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-white/35 font-bold">
-              Idées simples maintenant
-            </div>
-            {onCompose && (
-              <button
-                onClick={onCompose}
-                className="text-[10px] uppercase tracking-[0.12em] text-[#f2f2f2]/70 font-bold"
-              >
-                Composer
-              </button>
-            )}
-          </div>
-          {suggestions.map(s => (
-            <button
-              key={s.label}
-              onClick={onCompose}
-              className="block w-full text-left bg-white/[0.02] rounded-2xl p-3 active:scale-[0.99] transition-transform"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-[13px] font-semibold text-white">{s.label}</div>
-                  <div className="text-[10px] text-white/40 mt-0.5">{s.macros}</div>
-                </div>
-                <div className="text-[10px] text-white/25 shrink-0 mt-0.5">→</div>
-              </div>
-              <div className="text-[10px] text-white/32 mt-2 leading-relaxed">{s.rationale}</div>
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

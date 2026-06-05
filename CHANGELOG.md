@@ -1,4 +1,168 @@
+## 2026-06-05
+
+FIX(Nutrition PWA Composition): Macro header alignment — composeClientPage now calculates effectiveConsumed correctly (meals + ALL planned preps from the day + drafts in real-time) instead of only active-scenario preps ; SmartNutritionHero gauges now display with compensation system (actionableRemaining) in simulation mode, matching Planning tab behavior ; ensures gauges and macro display in composition page are perfectly aligned
+
+FEATURE(Nutrition PWA Planning): SmartNutritionHero — jauges Planning tab redesigned ; au lieu de "consommé / objectif", affiche uniquement la valeur restante pour atteindre l'objectif, dans la couleur de la jauge ; si calories dépassées de 4+, affiche "+X" en rouge avec label "Dépassé" ; si macros dépassées de 1+ g, affiche "+Xg" en rouge ; permet feedback immédiat sur capacité restante vs surcharge calorique
+
+FIX(Nutrition PWA): VoiceLogSheet — quantité 0 grammes → suppression automatique de l'aliment ; changé condition v > 0 en v >= 0, avec logique removeItem(idx) si v === 0 ; permet d'effacer complètement un aliment en réduisant la quantité sans "zéro bloqué"
+
+FIX(ExercisePicker): 4 exercices de poignet (wrist flexors/extensors) mal classifiés sous "biceps" → reclassifiés sous "avant-bras" ; nouvelles options visibles au filtre : Extensions poignets pronation assis + 3 Flexions poignets (variantes barre/poulie) ; total avant-bras catalogué passe de 5 à 9 exercices
+
+FEATURE(ExercisePicker): 4 exercices avant-bras manquants ajoutés au catalogue — alignement avec schéma-avant-bras.csv : Flexion poignet cable assis (FOR-001) + Pronation supination haltère sur banc (FOR-002) + Farmer walk haltères (FOR-003) + Curl marteau debout (FOR-006) ; total avant-bras catalogué passe de 9 à 13 exercices
+
+## 2026-06-04
+
+FEATURE: TDEE Adaptatif v2 — poids lissé 3j (moyenne mobile centrée), correction lutéale femmes (+0.8 kg rétention hydrique + +100 kcal BMR, Davidsen 2007), score confiance enrichi (ancrage protocole, fenêtre courte, cycle signal qualité)
+FEATURE: Nutrition Studio — accordéon "Comprendre ce résultat" : formule MacroFactor détaillée, facteurs de confiance, recommandations, historique
+CHORE: TdeeHistoryEntry — alignement snake_case avec colonnes DB (confidence_score, confidence_reasons)
+
+FEATURE: NutritionLogContent — bouton "Terminer le repas" remplacé par 2 boutons universels : "Planifier" (→ prep dans Planning, slot inféré par heure) + "Logger" (→ Bilan) ; présents sur toutes les routes de log
+FIX: QuickLogSheet — fetch today-progress au tap sur "Repas" et passe balanceContext au MealLogSheet ; jauges live P/G/L/kcal désormais visibles depuis le FAB + de la BottomNav comme depuis "Ajouter un repas" dans le Bilan
+
+FIX: TDEE adaptatif — fenêtre ancrée sur date de partage du protocole (metric_annotations) pour éviter de mélanger données pré/post-régime ; bloqué si < 7 jours depuis le début
+REFACTOR: weightSamples — resolveProtocolStartDate() + fetchWeightSamples() extracted ; collectAvgIntake prend anchorDate optionnel
+
+FIX: Recherche aliments — filtre ilike par token côté DB au lieu de charger 5000 items en mémoire ; "riz basmati" → `name_fr ilike '%riz%' AND name_fr ilike '%basmati%'` ; tri pertinence conservé côté JS sur les résultats DB
+
+FIX: Nutrition Studio — tdee_auto_enabled et tdee_adaptive_active ne persistaient pas (états initialisés avant le fetch async d'existingProtocol) ; sync dans useEffect existingProtocol
+FIX: Nutrition Studio — recalcul TDEE adaptatif automatique au chargement de la page si tdee_auto_enabled actif (plus besoin de cliquer "Recalculer")
+
+FIX: NutritionHub — exclure le jour J des graphiques, KPIs et insights (journée partielle fausse les moyennes) ; day J reste visible dans "Journées observées" uniquement
+FIX: NutritionHub — "Journée à auditer" exclut désormais le jour J (toujours partiel par définition)
+FEATURE: NutritionHub — "Journées observées" triées du plus récent au plus ancien (J en haut) + bordure verte + badge "Aujourd'hui" sur la row du jour courant
+
+FEATURE: Nutrition Studio — toggle "TDEE adaptatif actif" : remplace le TDEE estimé comme source de vérité dans tous les calculs (macros, déficit, protocole) ; recalcul automatique dès l'activation
+SCHEMA: nutrition_protocols — tdee_adaptive_active boolean ajouté
+REFACTOR: Nutrition Studio — suppression bloc prévisualisation avant/après (remplacé par toggle source de vérité)
+FIX: TDEE adaptatif — rescaling basé sur tdee_reference (TDEE coach réel) au lieu de day1Cal (calories post-déficit) ; séparation calcul (POST) / application (PUT) avec prévisualisation avant/après
+FIX: Inngest adaptive-tdee — ne rescale plus jamais automatiquement ; enregistre seulement + notifie le coach pour confirmation manuelle
+SCHEMA: nutrition_protocols — tdee_reference (integer) + deficit_surplus_pct (numeric) ajoutés
+FEATURE: Nutrition Studio — prévisualisation avant/après par jour avant d'appliquer le TDEE adaptatif + bouton Confirmer séparé
+CHORE: Restauration protocole Kev (Séche 001) aux valeurs pré-rescaling erroné
+
+FEATURE: MealLogSheet — surface plein écran (100vh slide-up) avec jauges live : arc kcal + 3 barres macro P/G/L mises à jour en temps réel via onDraftsChange (drafts non-sauvegardés inclus dans simulation)
+REFACTOR: NutritionClientPage — suppression VoiceEntryFab (double FAB bas-droite) ; tout le log passe par le + de la BottomNav
+FEATURE: Planning view — PrepCard miroir de MealCard : expand/collapse, entries inline éditables (quantité + suppression via PATCH entries JSONB), "Ajouter des aliments" via MealLogSheet, bouton "Valider — logger ce repas" avec animation fade avant refresh
+REFACTOR: Smart Nutrition — unification parcours : onglet Smart supprimé, toggle Bilan/Planning intégré dans NutritionMealsList, parcours log unique via MealLogSheet (NutritionLogContent standard) partout
+REFACTOR: QuickLogSheet — bouton "Repas" ouvre directement MealLogSheet standard sans sélecteur intermédiaire ; MealMethodSheet retiré du flux FAB
+FEATURE: NutritionMealsList — toggle Bilan (repas loggés) / Planning (preps du jour) intégré ; vue Planning avec PrepCard inline (Valider/Modifier/Supprimer)
+FEATURE: MealLogSheet mode guide — slot selector + toggle "Pour demain" + boutons Sauver/Valider inline (composer sans redirect vers /compose)
+
+FIX: PWA Nutrition tendances — vue TDEE masquée : 3 bugs corrigés (colonne tdee_formula inexistante sur nutrition_protocols, filtre MIN_LOGGED_KCAL trop strict sur tdeeMerged, guard rendu trop restrictif)
+FEATURE: TDEE Adaptatif intelligent — sources poids multi-niveaux (check-ins quotidiens > bilans > manual), fenêtre adaptative 14→21→30j, toggle auto nightly Inngest, score confiance enrichi
+SCHEMA: nutrition_tdee_history — colonnes confidence/confidence_score/confidence_reasons ajoutées ; nutrition_protocols — tdee_auto_enabled boolean
+FEATURE: Nutrition Studio — toggle "Recalcul automatique" TDEE (nightly Inngest si activé) ; bouton Calculer toujours visible même si null
+FIX: TDEE adaptatif — poids check-ins quotidiens désormais utilisés (avant : bilans seulement → souvent vide sur 14j)
+FEATURE: PWA Nutrition tendances — scrubbing tactile sur TdeeVsIntakeChart, KcalVariationChart, TdeeChart (glisser le doigt → tooltip date + valeurs) via hook useChartScrubber partagé
+REFACTOR: PWA Nutrition — TdeeVsIntakeChart refactorisé : vue TDEE vs Apport (ligne fixe = tdee_adaptive réel, masquée si non calculé) + toggle Cible vs Consommé (day.target coach) ; labels et couleurs distincts par vue
+FIX: Nutrition Studio — bouton "Calculer TDEE adaptatif" toujours visible (était caché quand tdeeAdaptive = null — cercle vicieux impossible à déclencher) ; label "Calculer" → "Recalculer" après premier calcul ; message explicatif quand pas encore calculé
+
 ## 2026-06-03
+
+FEATURE: Nutrition Studio — bouton retour (ArrowLeft) dans la top bar left (router.back())
+FEATURE: Workout Studio builder — bouton retour (ArrowLeft) dans la top bar left (setSelectedProgram(null))
+FIX: checkin-history API — weight_kg, rhr_morning, daily_steps absents du SELECT et du mapper → invisibles dans la vue coach
+FIX: CheckinHub — FIELD_META manquait weight_kg, rhr_morning, daily_steps (poids, FC repos, pas)
+
+REFACTOR: DS v3.0 — suppression totale du jaune (#ffe01e) dans /client et /components/client (25 occurrences, 10 fichiers) ; accent CTA → #f2f2f2 text-[#080808], hover → #e0e0e0 ; règles CLAUDE.md + ui-design-system.md mises à jour
+
+FIX: PWA Nutrition tendances — TDEE référence = nutrition_protocols.tdee_adaptive (valeur Nutrition Studio) au lieu du fallback target protocole ; jours partiels (<800 kcal) exclus des charts variation et TDEE vs apport
+FEATURE: PWA Nutrition tendances — ajout TdeeVsIntakeChart (TDEE vs apport réel + zone déficit/surplus) et KcalVariationChart (variation kcal J vs J-1) + dropdown période global 7j/14j/30j/90j
+FEATURE: PWA Nutrition — route API /api/client/nutrition/tdee-history?days= (client-side, RLS client)
+REFACTOR: PWA Nutrition — TdeeChart reçoit days en prop (suppression range interne 1M/3M/ALL)
+REFACTOR: API weekly-trend — accepte param ?days= (7 à 90) au lieu du hardcode 7 jours
+REFACTOR: Workout — tabs (Séance/Performances/Historique) déplacés dans la top bar (left slot, même style pill gris/blanc) ; section+title supprimés ; pt-[88px] → pt-[72px]
+
+REFACTOR: PWA Nutrition — suppression section "Idées simples maintenant" (RemainingBreakdown) + nettoyage prop onCompose et import suggestFoodsFromBalance
+FIX: DS v3.0 — ProfilePhotoUpload: bg-accent/text-accent (vert coach) → #ffe01e/#0d0d0d, suppression shadow-md
+FIX: DS v3.0 — NotificationsPanel: text-accent, bg-accent/5, bg-accent/10, bg-accent toggle → tokens #ffe01e DS v3.0
+FIX: DS v3.0 — ProfilAccordion + AccordionSection: bg-[#111111] → bg-[#161616] (surface token DS v3.0)
+FIX: DS v3.0 — PreferencesForm: toggle actif bg-[#f2f2f2] → bg-[#ffe01e], hover #ffd000 → #ffe01e, save button jaune accent
+FIX: DS v3.0 — ProfileForm: bouton save + sélecteur fréquence hebdo actif bg-[#f2f2f2] → bg-[#ffe01e] text-[#0d0d0d]
+
+REFACTOR: Nutrition — tabs (Suivi/Tendances/Smart) déplacés dans la top bar (left slot) ; dayTypeBadge reste sur la même ligne à droite ; tab bar standalone supprimé ; pt-[88px] → pt-[72px]
+REFACTOR: Nutrition — onglet "Aujourd'hui" renommé "Suivi" (neutre à la date, valide pour tout jour navigué) ; clé i18n nutrition.tab.suivi (fr/en/es)
+
+REFACTOR: Smart Nutrition compose — suppression header (SMART NUTRITION / JE COMPOSE / date + bouton retour) ; section sticky passe en bg-[#0d0d0d] solid (fin du glassmorphisme et du fond #101010)
+REFACTOR: Smart Nutrition compose — 2-col Voix/Texte + 3-col Recherche/Explorer/Bibliothèque remplacés par 1 ligne 3 boutons sans icône : Voix & Texte · Catégories · Favoris ; barre de recherche toujours visible, labels de section supprimés
+
+FEATURE: Nutrition — remplace onglet "Protocole" par onglet "Smart" (Smart Nutrition) ; SmartNutritionPrepList déplacé dans l'onglet Smart ; bouton CTA indigo (#818cf8) cohérent avec la page compose
+REFACTOR: Nutrition — sheets et modals (MealLogSheet, MealMethodSheet, VoiceLogSheet, QuickWaterModal) déplacés hors du bloc aujourd_hui pour rester accessibles depuis tous les onglets
+REFACTOR: VoiceEntryFab — suppression du bouton violet Smart Nutrition (entrée via onglet Smart désormais) ; FAB réduit à 2 boutons (+ Repas + Mic)
+
+FIX: Runtime — "undefined is not an object (evaluating 'a[r][e]')" Métriques → 14 clés meas.guide.\* (neck/shoulders/chest/waist/hips/glutes/armLeft/armRight/forearmLeft/forearmRight/thighLeft/thighRight/calfLeft/calfRight) manquantes en tant que string[] dans clientTranslations.ts — MeasurementsEntrySheet appelait ta() sur des clés inexistantes à chaque render
+FIX: Build — messageComposer.ts : apostrophes courbes (U+2018/2019) dans strings single-quoted causaient SWC syntax error → converti en double-quoted strings
+FIX: Runtime — "Can't find variable: t" Nutrition page → VoiceEntryFab.tsx manquait useClientT()
+FIX: Runtime — "Can't find variable: t" Métriques page → MetricsClientPage.tsx manquait useClientT()
+FIX: Runtime — "Can't find variable: t" Programme page → ExerciseContextMenu.tsx + SupersetContextMenu.tsx manquaient useClientT()
+
+FEATURE: Smart Nutrition — Titre de prépa : input "Nom du repas" dans la zone de draft; prop prepTitle transmise à savePrep(); incluse dans le POST/PATCH body
+FEATURE: Smart Nutrition — Rename scénario PATCH DB: commitRename() patche toutes les prépas existantes du scénario (scenario_label) en fire-and-forget
+FIX: Smart Nutrition — Comparaison scénarios: affiche le total de TOUTES les prépas du scénario (pas seulement les actives)
+FIX: Smart Nutrition — Notifications coach: rate limit max 1 par coach/client/jour (check existing notif avant INSERT)
+FEATURE: Smart Nutrition — Intégration chat IA: buildSystemPrompt fetch client_nutrition_preps (today, planned) et injecte "Plan Smart Nutrition" dans le bloc SIGNAUX
+
+FIX: Chat morning greeting — ctaHint RHR déplacé avant "Prêt pour le check-in ?" + closerMorning retiré du greeting (évite répétition avec le closing)
+FIX: Chat closing matin — sessionFact "pas encore faite" supprimé si morning + nutritionFact "sous la cible" supprimé si morning + hydrationFact supprimé si morning
+FIX: adviceRules — tips hydration_low et protein_short_day désactivés en contexte morning (données non représentatives au réveil); ajout du champ flow à AdviceInput
+
+FIX: PWA P0 — useClientT appelé conditionnellement dans onboarding/page.tsx (hook dans if → hissé au niveau du composant)
+FIX: PWA P0 — setSwappedNames indéfini dans SessionLogger.tsx (→ handleSwap + setAltSheetTarget)
+FIX: PWA P0 — VolumeCoverageWidget t() appelé sans useClientT (ajout 'use client' + useClientT)
+FIX: PWA P1 — auth guard manquant dans programme/page.tsx, session/page.tsx, metrics/page.tsx, bilans/page.tsx, bilans/[submissionId]/page.tsx (redirect '/client/login')
+FIX: PWA P2 — clés checkin legacy (sleep_duration/energy/stress/mood) → canoniques (sleep_hours/energy_level/stress_level)
+FIX: PWA P2 — param [moment] non validé dans checkin/[moment]/page.tsx (guard morning/evening)
+FIX: PWA P2 — 'use client' manquant sur RemainingBreakdown.tsx
+FIX: PWA P3 — bg-[#080808] → bg-[#0d0d0d] sur 23 fichiers pages/composants (token DS v3.0)
+FIX: PWA P3 — surface bg-[#111111] → bg-[#161616] sur access/expired, access/invalid, acces-suspendu, LogoutButton, bilans
+FIX: PWA P3 — CTA bg-[#f2f2f2] text-white → bg-[#ffe01e] text-[#0d0d0d] dans checkin pages
+FIX: PWA P3 — SetRow boxShadow coloré vert → neutre (border-white/[0.06])
+FIX: PWA P3 — rounded-sm → rounded-lg heatmap ProgrammeClientPage, rounded-t-3xl → rounded-t-2xl MealMethodSheet
+FIX: PWA P3 — font-sans → font-barlow dans 8 pages PWA + NoProgramPage
+FIX: PWA P4 — TRAINING_ACCENT + VOLUME_OVERFLOW_COLOR exportés depuis ui-colors.ts et utilisés dans SessionLogger SVG, SetRow, SmartWorkoutHero, VolumeCoverageWidget
+FIX: PWA P4 — maxHeight 88vh manquant sur ExerciseContextMenu, SetTypeSelector, SetRow.ConfirmModal
+
+FEATURE: Smart Nutrition — FlashMessage toast (error/success/info) + useFlash hook — composant /components/client/smart/FlashMessage.tsx
+FEATURE: Smart Nutrition — Toasts d'erreur handleSavePrep/handleSaveMeal dans ComposeClientPage
+FEATURE: Smart Nutrition — Feedback erreur inline dans PrepCard (logPrep / deletePrep silencieux corrigés)
+FEATURE: Smart Nutrition — Renommage scénarios inline: tap sur chip actif → input rename → Enter/blur commit
+FEATURE: Smart Nutrition — sessionStorage persist des scénarios éphémères par date (survive nav date sans drafts)
+FEATURE: Smart Nutrition — Slot reminder dans DECISION card (badge slot visible en layer quantity)
+FIX: Smart Nutrition — persistMeal passe logged_at=noon du prepDate (physiological_date timezone-safe)
+FIX: Smart Nutrition — persistMeal passe meal_type depuis prepMealSlot (cohérence slot en DB)
+FEATURE: Smart Nutrition — Notification coach à chaque validation de prépa (nutrition_trend / prep_validated)
+
+FIX: QuickLogSheet — t('ui.add.meal') appelé hors composant (module-level const) → "Can't find variable: t" au démarrage; remplacé par string FR
+FIX: Chat check-in — slotOpensAt() itérait par pas de 30 min → ne matchait jamais 04:35 → fallback midi UTC (= 14h Paris) → pendingCount=0 avant 14h + cron sans CTA check-in; itération passée à 1 min
+FIX: Chat check-in — MORNING_START_MIN aligné sur le cutoff physiologique 05:00 (était 04:35, incohérent avec le jour physiologique)
+
+FEATURE: Smart Nutrition — Sélecteur de slot repas (P.Déj/Déjeuner/Dîner/Collation) dans la compose page; meal*slot transmis à l'API au save
+FEATURE: Smart Nutrition — Bouton "Valider" masqué pour J+1/J+2/J+3 (uniquement "Sauver" pour les jours futurs)
+FEATURE: Smart Nutrition — Carte de comparaison scénarios (tableau kcal+P+G+L par scénario actif) visible dans le prep panel quand ≥2 scénarios
+FEATURE: Smart Nutrition — Coach: widget ClientNutritionPrepsWidget + API GET /api/clients/[clientId]/nutrition-preps (prépas J0→J+3 groupées par date + statut planned/logged)
+FEATURE: Smart Nutrition — Wire coach widget dans NutritionHub (page données nutrition d'un client)
+REFACTOR: Smart Nutrition i18n — 50+ clés ajoutées (compose.*, prep.\_) dans clientTranslations.ts; ComposeClientPage et SmartNutritionPrepList câblés sur useClientT()
+
+FIX: Smart Nutrition B1 — savePrep() envoie planned_for (date composée) — prépas J+1/J+2/J+3 sauvegardées à la bonne date physiologique
+FIX: Smart Nutrition B2 — savePrep/saveMeal retournent boolean; handleSavePrep/handleSaveMeal vérifient le succès avant de clear/naviguer
+FIX: Smart Nutrition B3 — route /log idempotente (consumed_meal_id guard avant création repas); side-effects agenda+points loggés en erreur sans bloquer la réponse
+FIX: Smart Nutrition B4 — quickLogFavorite en mode simulation ajoute les entrées aux drafts au lieu de logger pour de vrai
+FIX: Smart Nutrition B5 — useImperativeHandle stale closure corrigé: prepId/prepScenario/prepDate/onSuccess dans les deps
+FIX: Smart Nutrition B6 — optimistic update togglePrepActivation filtre par scenario_key (plus de désactivation cross-scénario)
+FIX: Smart Nutrition B7 — NutritionLogContent bg-[#0d0d0d] (était #080808, viole DS v3.0)
+FIX: Smart Nutrition B8 — router.back() sécurisé avec fallback /client/nutrition si history vide
+FIX: Smart Nutrition B9 — SmartNutritionHero: overflow macro affiché en rouge même en simulation mode
+FIX: Smart Nutrition B10 — label "Apres ajout" renommé "Il reste après" (sémantique correcte)
+FIX: Smart Nutrition B11 — initialPrepEntries reconstruit avec category_l1 inférée des macros (plus "extras" systématique)
+FIX: Smart Nutrition B12 — handleSaveMeal log également les preps actifs via Promise.allSettled
+FIX: Smart Nutrition B13/B15 — navigation de date bloquée si drafts en cours (flèches disabled + hint "Sauve d'abord")
+FIX: Smart Nutrition B14 — card "Il reste après" affiche overflow en rouge avec signe + au lieu de 0g
+FIX: Smart Nutrition A1 — isCompletionMode: seuil fat relevé à 40g (était 30g, trop restrictif)
+FIX: Smart Nutrition A2 — clampGrams completion mode utilise foodProfile.minPortionG (était 25g fixe)
+FIX: Smart Nutrition A3 — fatFloor cappé à 85% du target protocol pour éviter conflit low-fat
+FIX: Smart Nutrition A4 — suppression blocs dead code composerMode==="simulation" && !isSmartPrepMode
+REFACTOR: Smart Nutrition Q1 — lib/nutrition/preps-service.ts extrait (service/resolveClientId/buildPrepEntries/setPrepActivation partagés)
+REFACTOR: Smart Nutrition Q2 — lib/utils/date.ts extrait (shiftIsoDate partagé entre 3 fichiers)
 
 FEATURE: PWA i18n 100% Espagnol — 14 components wired (35+ keys added), 594 alimentos ES seeded, seed EN in progress
 REFACTOR: NutritionWidget, SmartNutritionHero, RemainingBreakdown, BodyDataTab, MetricsClientPage, MeasurementsEntrySheet, DeloadAlertBanner, VoiceEntryFab, ExerciseContextMenu, SupersetContextMenu, ProtocolRationale, SmartNutritionPrepList, VolumeCoverageWidget, VitalityTab — all component labels/aria/messages to useClientT()
@@ -17,7 +181,7 @@ FEATURE: Add 20+ missing i18n keys: sleep_duration scales, common scales, measur
 REFACTOR: CheckinModal, MeasurementsEntrySheet, LogPeriodSheet, ProfilePhotoUpload, ProtocolRationale, QuickWaterModal — all use dynamic i18n
 REFACTOR: CheckinModal — build FIELD_META dynamically with scale mapping (sleep_duration→0h/14h, scales 1–5)
 REFACTOR: MeasurementsEntrySheet — buildFields() helper; dynamic labels (meas.weight, meas.neck, etc.) and section headers
-REFACTOR: LogPeriodSheet — cycle.success.* keys with phase placeholder ({phase})
+REFACTOR: LogPeriodSheet — cycle.success.\* keys with phase placeholder ({phase})
 REFACTOR: ProfilePhotoUpload — all error/action messages wired to i18n
 REFACTOR: ProtocolRationale — carb_cycle labels, TDEE source, bulk/cut/maint descriptions, protocol label titles
 REFACTOR: QuickWaterModal — error handling fallback to i18n
@@ -61,7 +225,7 @@ FEATURE: CheckinHub — page check-in coach (data/checkins) refondue niveau Data
 FEATURE: profil CheckinConfigWidget — mini-aperçu 7 jours (strip matin/soir + streak + taux) + bouton "Voir le détail →" vers data/checkins
 CHORE: suppression page check-in orpheline (app/coach/clients/[id]/check-ins) — config = profil (source unique), analytics = data/checkins
 
-FEATURE: rappel léger ~1h après "Plus tard" sur check-in — nouveau message chat (sans écraser l'init) + push (si activé), idempotent (metadata.defer_reminded), seulement dans la fenêtre du moment. Inngest checkin-defer-reminder (*/15)
+FEATURE: rappel léger ~1h après "Plus tard" sur check-in — nouveau message chat (sans écraser l'init) + push (si activé), idempotent (metadata.defer*reminded), seulement dans la fenêtre du moment. Inngest checkin-defer-reminder (*/15)
 FIX: crash page nutrition PWA ("undefined is not an object 'd.map'") — SmartNutritionPrepList exigeait scenarioOptions/activeScenarioKey/onScenarioChange non passés par NutritionClientPage → props rendues optionnelles avec défauts + slot prep blindé
 FIX: on-demand init (GET /messages) respecte la config coach (actif + jour + moment configuré) — n'offre plus un check-in non activé ; champs déjà tirés de la config (jamais codés en dur)
 FIX: CheckinConfigWidget — méthode POST (la route checkin-config n'a pas de PUT) → corrige "Erreur de sauvegarde" rouge à chaque toggle de champ coach
@@ -69,7 +233,7 @@ FIX: message defer check-in — pointe vers le bouton Check-in "en haut à gauch
 FIX: "Plus tard" sur check-in respecté — le message d'init n'est plus régénéré/écrasé à l'expiration du defer (plus de re-nag à 1h du matin) ; check-in via bouton top-bar + badge
 FIX: init chat utilise le weekday du jour PHYSIOLOGIQUE (pas calendaire) — corrige la séance erronée référencée après minuit avant cutoff 05:00 (ex: check-in soir de lundi rouvert à 01:24 mardi montrait la séance de mardi)
 FIX: copy greeting soir — nom de séance isolé entre parenthèses + flow resserré (les virgules du nom ne cassent plus la phrase)
-FEATURE: Route HTTP `/api/cron/chat-checkin-init` — lance morning+evening init, indépendant d'Inngest (crons Inngest morts en prod, diagnostiqué) ; appelable Inngest/cron externe (Hobby = pas de */15 Vercel)
+FEATURE: Route HTTP `/api/cron/chat-checkin-init` — lance morning+evening init, indépendant d'Inngest (crons Inngest morts en prod, diagnostiqué) ; appelable Inngest/cron externe (Hobby = pas de \_/15 Vercel)
 CHORE: ancienne page check-ins config — clés de champs canoniques (anti re-drift)
 CHORE: remap prod des clés legacy daily_checkin_configs.moments[].fields → canoniques
 
@@ -121,7 +285,6 @@ FEATURE: MorphoEvolutionPanel — panel longitudinal: overall trend badge, score
 FEATURE: MorphoAnalysisDrawer — section "Exercices recommandés" lazy-fetchée depuis /morpho/exercise-map, groupée par muscle (12 groupes), triée par niveau avantage, substitution si contre-indiqué; prop clientId ajouté
 FIX: evolution route + exercise-map route — acceptent désormais prompt_version v2 ET v3 (étaient filtrés v2 uniquement)
 
-
 FIX: ProgrammeClientPage — skip card "Séance annulée" + accents corrects, badge "Repos" (DS v3.0 neutral), sheet bg-[#161616], bouton "Confirmer", texte "journée de repos"
 FIX: nutrition/page.tsx — dayTypeLabel "Jour off" → "Journée de repos"
 FIX: today-strip API — filtrage des sessions skippées (client_workout_skips), target calorique bascule sur protocole repos si day_override kind=off
@@ -145,7 +308,7 @@ REFACTOR: NutritionMealsList accepts onAddMore(mealId) callback; MealLogSheet ac
 
 FEATURE: Check-in TZ windows (soir 21h–04h30, matin 04h35–17h), max 2 backlog 24h, top-bar + chat sync
 FEATURE: Proactive coach check-in — greeting + Oui/Plus tard (defer 1h) before flow; evening daily_steps in chat
-FEATURE: Inngest morning/evening init — cron */15 with per-client timezone (06:30 / 21:00 local)
+FEATURE: Inngest morning/evening init — cron \*/15 with per-client timezone (06:30 / 21:00 local)
 SCHEMA: client_daily_checkins.daily_steps + rolling 7d average in nutrition-data
 
 FEATURE: Phase Optimization Engine — 2-axis physiological steering (energetic direction × adaptive state)
@@ -164,7 +327,6 @@ CHORE: Deprecate /api/client/ai-coach/chat — redirect 308 to /chat/messages
 CHORE: Export PHYSIOLOGICAL_DAY_OFFSET_HOURS from physiological-date.ts
 
 ## 2026-05-31
-
 
 REFACTOR: TransformationPhaseWidget — replace 62-tick histogram with continuous gradient spectrum bar, dynamic oval thumb with glow, per-phase accent colors, rationale tooltip card with triangle pointer aligned to thumb, metric cards in 3-col horizontal grid
 FIX: morpho photo sync — POSITION_MAP missing side_right/side_left/relaxed/contracted → only front+back were synced from bilans; all 6 positions now mapped
@@ -198,6 +360,7 @@ FEATURE: MorphoPro v2 — GET /api/clients/[clientId]/morpho/evolution-timeline 
 FIX: isMorphoV2 type guard — accept any input (was restricted to MorphoAnalysisResult)
 REFACTOR: TransformationPhaseWidget — remplace arc SVG par tick-bar meter identique à TransformationScoreWidget; dégradé rouge→vert→rouge (extrêmes=rouge, maintenance=vert); spectre gauche→droite CO/CP/PG/MN/RQ/PM/RC; layout 2 col (meter+rationale | metric cards); skeleton adapté (tick-bar pulse + 3 metric cards)
 FEATURE: transformation-score route — enrichi avec metricCards (avgWeight, sleepScore, avgPerformance, sessionsCount); window toggle 7j/30j
+
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
 ## 2026-05-29
@@ -385,7 +548,7 @@ REFACTOR: NutritionClientPage — SmartAlertsFeed moved after SmartNutritionHero
 
 ## 2026-05-28 — DS v4.0 Complete PWA Compliance Audit (Phase 2)
 
-REFACTOR: DS v4.0 PWA color audit & fixes — eliminated all colored accents, badges, borders, shadows across 40+ files in /client, /components/client, /app/api routes. Replaced colored trends (green/red/amber/yellow), colored badges (meal/water/checkin/strength/deload alerts), interim grays (#2a2a2a/#2e2e2e/#404040), and accent borders with strict grayscale tokens (white/[0.04-0.10], text-[#b0b0b0], text-[#808080]). Files audited: TdeeChart, OneRMWidget, SmartAlertsFeed, DeloadAlertBanner, VoiceLogSheet, SetRow, RemainingBreakdown, SmartAgendaTimeline, metrics/* (VitalityTab, MetricCard, MetricExpandedChart, etc.), ChatConversation, ChatPage, ChatTodayStrip, NewProtocolBanner, QuickLogSheet. Data chart tokens (--data-copper, --data-gold, --data-petrol) remain unchanged and audit-verified for chart-only usage.
+REFACTOR: DS v4.0 PWA color audit & fixes — eliminated all colored accents, badges, borders, shadows across 40+ files in /client, /components/client, /app/api routes. Replaced colored trends (green/red/amber/yellow), colored badges (meal/water/checkin/strength/deload alerts), interim grays (#2a2a2a/#2e2e2e/#404040), and accent borders with strict grayscale tokens (white/[0.04-0.10], text-[#b0b0b0], text-[#808080]). Files audited: TdeeChart, OneRMWidget, SmartAlertsFeed, DeloadAlertBanner, VoiceLogSheet, SetRow, RemainingBreakdown, SmartAgendaTimeline, metrics/\* (VitalityTab, MetricCard, MetricExpandedChart, etc.), ChatConversation, ChatPage, ChatTodayStrip, NewProtocolBanner, QuickLogSheet. Data chart tokens (--data-copper, --data-gold, --data-petrol) remain unchanged and audit-verified for chart-only usage.
 
 ## 2026-05-27
 
@@ -426,8 +589,6 @@ FIX: VoiceLogSheet — recognition.start() wrapped in try-catch; startingRef res
 FIX: VoiceLogSheet — "Ré-enregistrer" button no longer wraps; tracking reduced to 0.08em, text-[11px], whitespace-nowrap, flex-1; "Analyser" uses flex-[1.4] instead of flex-[2] for balanced proportions
 REFACTOR: BottomNav — active pill now covers icon+label (was icon-only white); bg rgba(255,255,255,0.10) gray instead of #f2f2f2 white; icon+label both #e8e8e8 on active; icon size unified to 21 (was 15/19); nav height 62→70px; FAB circle→rounded square (borderRadius 14, matches active pill, nav bar is 22)
 
-
-
 FIX: QuickLogSheet — "Repas" action now opens MealLogSheet as sub-sheet directly instead of navigating to /client/nutrition (sheet was not opening)
 FIX: MealLogSheet — background changed from #111111 to #0a0a0a for contrast against #161616 surface items
 FIX: NutritionLogContent — all layers now use #161616 (DS surface token) for items/inputs; layer 1 category grid and search wrapped in #161616 section containers; layer 2 subcategories and layer 3 items wrapped in #161616 list containers with white/4 dividers; footer bg updated to #0a0a0a with top border
@@ -442,8 +603,6 @@ FIX: coach-info API — returns 2-char initials (first + last name) instead of s
 
 FEATURE: NutritionStudio — resizable columns (drag dividers), fullscreen layout mode, per-column scroll isolation matching Workout Studio behavior
 REFACTOR: Nav label "Nutrition" → "Nutrition Studio" in protocoles dropdown + list page TopBar
-
-
 
 FEATURE: Cycle Sync v2 — menstrual_cycle_logs table + cycleEngine (personal avg cycle length, 28 tests), client API routes (POST /cycle/log, GET /cycle/status), coach API route (GET /clients/[clientId]/cycle/status)
 FEATURE: CyclePhasePill component — phase/day/confidence pill shown in Nutrition + Programme + SessionLogger TopBars (female-gated)
@@ -586,7 +745,7 @@ CHORE: globals.css + tailwind.config.ts — ajout token --data-steel: #607a80
 
 REFACTOR: Client PWA — Design System v4.0 dark gray minimal (DS v4.0) — 60+ fichiers
 REFACTOR: Suppression totale #ffe01e (accent jaune) de toute l'app client
-REFACTOR: Suppression totale border-white/* dans composants client (zéro bordures)
+REFACTOR: Suppression totale border-white/_ dans composants client (zéro bordures)
 REFACTOR: Gray scale #080808→#f2f2f2 comme unique système couleur UI /client
 REFACTOR: Boutons primary → bg-[#f2f2f2] text-[#080808] (monochrome max contraste)
 REFACTOR: Nav active → text-[#f2f2f2], inactive → text-[#5a5a5a]
@@ -594,7 +753,7 @@ REFACTOR: Chat — user bubbles bg-[#f2f2f2] text-[#080808], bot bg-[#111111]
 REFACTOR: Nutrition charts — data colors var(--data-copper/gold/petrol) uniquement
 REFACTOR: TempoGuideModal — accent #FFB800 → #e0e0e0, phases PHASE_CONFIG neutres
 REFACTOR: AdherenceScoreCard — thèmes recalibrés sur gray scale
-CHORE: globals.css — ajout tokens --c-* (gray scale) + --data-copper/gold/petrol
+CHORE: globals.css — ajout tokens --c-_ (gray scale) + --data-copper/gold/petrol
 CHORE: tailwind.config.ts — gray scale + data colors ajoutés
 CHORE: manifest.json + viewport themeColor → #080808
 
@@ -719,7 +878,7 @@ REFACTOR: VoiceEntryFab — FAB cluster jaune : bouton + (jaune plein, ouvre Mea
 REFACTOR: AdherenceScoreCard — labels complets (Nutrition, Hydratation, Check-ins), font 7px pour tenir en 4 colonnes
 REFACTOR: ClientTopBar — full jaune (#ffe01e), texte #0d0d0d, suppression bande accent
 REFACTOR: BottomNav — onglet actif = icône+label jaune uniquement (suppression bande top + fond), action buttons rounded-2xl
-FEATURE: CheckinModal — bottom sheet DS v3.0 (sliders jaunes, progress dots, success state +pts), remplace les pages /client/checkin/*
+FEATURE: CheckinModal — bottom sheet DS v3.0 (sliders jaunes, progress dots, success state +pts), remplace les pages /client/checkin/\*
 REFACTOR: ClientHomeShell — wrapper client pour DayChecklist + CheckinModal + router.refresh() sur succès
 REFACTOR: BottomNav — action checkin ouvre CheckinModal (morning/evening selon heure)
 

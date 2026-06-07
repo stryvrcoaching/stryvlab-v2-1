@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { computeNutritionAlerts } from '@/lib/client/smart/nutritionAlerts'
+import type { SmartNutritionPrep } from '@/components/client/smart/SmartNutritionPrepList'
 import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
 import type { NutritionMeal } from '@/lib/nutrition/food-items'
 import type { GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
@@ -52,7 +53,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const clientId = client.id
 
   // ── Parallel fetches (all direct Supabase, no loopback HTTP) ──────────────
-  const [protoResult, mealsResult, waterResult, weightResult, checkinWeightResult, trendResult, streakResult, prefsResult, cycleResult, cycleLogsResult] = await Promise.allSettled([
+  const [protoResult, mealsResult, prepsResult, waterResult, weightResult, checkinWeightResult, trendResult, streakResult, prefsResult, cycleResult, cycleLogsResult] = await Promise.allSettled([
     svc()
       .from('nutrition_protocols')
       .select('tdee_adaptive, tdee_data_source, schedule_start_date, nutrition_protocol_days(position, name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
@@ -86,6 +87,15 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       .eq('client_id', clientId)
       .gte('logged_at', dayStart)
       .lte('logged_at', dayEnd),
+
+    svc()
+      .from('client_nutrition_preps')
+      .select('id, physiological_date, title, meal_type, meal_slot, variant_group_id, scenario_key, scenario_label, is_active, status, entries, total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g, planned_for')
+      .eq('client_id', clientId)
+      .eq('physiological_date', date)
+      .eq('status', 'planned')
+      .eq('scenario_key', 'default')
+      .order('created_at', { ascending: false }),
 
     // Latest body weight from assessments
     svc()
@@ -218,6 +228,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
     entries: m.nutrition_entries ?? [],
     nutrition_entries: undefined,
   }))
+  const preps: SmartNutritionPrep[] = (prepsResult.status === 'fulfilled' ? (prepsResult.value.data ?? []) : []) as SmartNutritionPrep[]
   const water = waterResult.status === 'fulfilled' ? (waterResult.value.data ?? []) : []
 
   const consumedBase = meals.reduce(
@@ -231,6 +242,24 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   )
   const water_ml = water.reduce((s, w) => s + Number(w.amount_ml ?? 0), 0)
   const consumed: NutritionMacros = { ...consumedBase, water_ml }
+  const planningPrepTotals = preps
+    .filter(prep => prep.is_active)
+    .reduce(
+      (acc, prep) => ({
+        kcal: acc.kcal + Number(prep.total_calories ?? 0),
+        protein_g: acc.protein_g + Number(prep.total_protein_g ?? 0),
+        carbs_g: acc.carbs_g + Number(prep.total_carbs_g ?? 0),
+        fat_g: acc.fat_g + Number(prep.total_fat_g ?? 0),
+      }),
+      { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+    )
+  const planningConsumed: NutritionMacros = {
+    kcal: consumed.kcal + planningPrepTotals.kcal,
+    protein_g: consumed.protein_g + planningPrepTotals.protein_g,
+    carbs_g: consumed.carbs_g + planningPrepTotals.carbs_g,
+    fat_g: consumed.fat_g + planningPrepTotals.fat_g,
+    water_ml: consumed.water_ml,
+  }
 
   // ── IA alerts (pure fn, no HTTP) ──────────────────────────────────────────
   const hasLunchLog = meals.some(m => m.meal_type === 'lunch')
@@ -352,7 +381,9 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       date={date}
       target={target}
       consumed={consumed}
+      planningConsumed={planningConsumed}
       meals={meals}
+      preps={preps}
       alerts={alerts}
       trend={trend}
       loggedDates={loggedDatesSet}

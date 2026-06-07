@@ -9,7 +9,7 @@ import { NutritionLogContent, type NutritionLogContentHandle } from '@/app/clien
 import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
 
 interface ComposeClientPageProps {
-  consumed: NutritionMacros
+  planningConsumed: NutritionMacros
   target: NutritionMacros
   date: string
 }
@@ -18,18 +18,18 @@ type DraftTotals = { calories: number; protein: number; carbs: number; fat: numb
 
 const ZERO_DRAFTS: DraftTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, count: 0 }
 
-export default function ComposeClientPage({ consumed, target, date }: ComposeClientPageProps) {
+export default function ComposeClientPage({ planningConsumed, target, date }: ComposeClientPageProps) {
   const router = useRouter()
   const logRef = useRef<NutritionLogContentHandle>(null)
   const [draftTotals, setDraftTotals] = useState<DraftTotals>(ZERO_DRAFTS)
   const [saving, setSaving] = useState<'prep' | 'meal' | null>(null)
 
   const effectiveConsumed: NutritionMacros = {
-    kcal: consumed.kcal + draftTotals.calories,
-    protein_g: consumed.protein_g + draftTotals.protein,
-    carbs_g: consumed.carbs_g + draftTotals.carbs,
-    fat_g: consumed.fat_g + draftTotals.fat,
-    water_ml: consumed.water_ml,
+    kcal: planningConsumed.kcal + draftTotals.calories,
+    protein_g: planningConsumed.protein_g + draftTotals.protein,
+    carbs_g: planningConsumed.carbs_g + draftTotals.carbs,
+    fat_g: planningConsumed.fat_g + draftTotals.fat,
+    water_ml: planningConsumed.water_ml,
   }
 
   const handleDraftsChange = useCallback((totals: DraftTotals) => {
@@ -94,7 +94,7 @@ export default function ComposeClientPage({ consumed, target, date }: ComposeCli
           <button
             onClick={handleSavePrep}
             disabled={saving !== null}
-            className="h-11 rounded-xl bg-[#818cf8]/15 border border-[#818cf8]/25 text-[#818cf8] text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.1em] disabled:opacity-40 active:scale-[0.98] transition-all"
+            className="h-11 rounded-xl bg-white/[0.04] text-white/70 text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.1em] disabled:opacity-40 active:scale-[0.98] transition-all"
           >
             {saving === 'prep' ? '...' : 'Sauver'}
           </button>
@@ -116,7 +116,7 @@ export default function ComposeClientPage({ consumed, target, date }: ComposeCli
           composerMode="guide"
           hideActions
           onDraftsChange={handleDraftsChange}
-          balanceContext={{ consumed, target }}
+          balanceContext={{ consumed: planningConsumed, target }}
         />
       </div>
     </main>

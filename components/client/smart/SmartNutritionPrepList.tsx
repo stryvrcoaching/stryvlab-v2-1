@@ -101,9 +101,9 @@ function PrepCard({ prep, onLogged, onDeleted, onEdit, onToggleActive }: {
         className="w-full flex items-center gap-3 px-4 pt-4 pb-3 text-left"
       >
         <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-          prep.is_active ? 'bg-[#818cf8]/12' : 'bg-white/[0.05]'
+          prep.is_active ? 'bg-white/[0.09]' : 'bg-white/[0.05]'
         }`}>
-          <Wand2 size={16} className={prep.is_active ? 'text-[#818cf8]' : 'text-white/55'} />
+          <Wand2 size={16} className={prep.is_active ? 'text-white' : 'text-white/55'} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-semibold text-white truncate">{prep.title || "Repas préparé"}</p>
@@ -111,7 +111,7 @@ function PrepCard({ prep, onLogged, onDeleted, onEdit, onToggleActive }: {
             <p className="text-[10px] uppercase tracking-[0.12em] text-white/30">Smart Nutrition Prep</p>
             <span className="text-[9px] uppercase tracking-[0.12em] text-white/35">{SLOT_LABELS[prep.meal_slot]}</span>
             {prep.is_active ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#818cf8]/12 px-2 py-0.5 text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-[#818cf8]">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.08] px-2 py-0.5 text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-white/70">
                 <Sparkles size={10} />
                 Active
               </span>
@@ -149,7 +149,7 @@ function PrepCard({ prep, onLogged, onDeleted, onEdit, onToggleActive }: {
           >
             <div className="px-4 pb-3 space-y-2">
               {prep.is_active && (
-                <div className="rounded-xl bg-[#818cf8]/10 px-3 py-2 text-[11px] text-white/72 leading-relaxed">
+                <div className="rounded-xl bg-white/[0.05] px-3 py-2 text-[11px] text-white/72 leading-relaxed">
                   Cette variante compte actuellement dans le futur simulé de ta journée.
                 </div>
               )}
@@ -175,7 +175,7 @@ function PrepCard({ prep, onLogged, onDeleted, onEdit, onToggleActive }: {
                 disabled={busy !== null}
                 className={`h-9 px-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.1em] disabled:opacity-40 active:scale-[0.98] transition-all ${
                   prep.is_active
-                    ? "bg-[#818cf8]/12 text-[#818cf8]"
+                    ? "bg-white/[0.10] text-white"
                     : "bg-white/[0.04] text-white/55"
                 }`}
               >
@@ -288,7 +288,7 @@ export default function SmartNutritionPrepList({
                 onClick={() => onScenarioChange(scenario.key)}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.14em] transition-all ${
                   active
-                    ? 'bg-[#818cf8]/16 text-[#818cf8]'
+                    ? 'bg-white/[0.10] text-white'
                     : 'bg-[#111114] text-white/42 hover:text-white/72'
                 }`}
               >
@@ -306,7 +306,7 @@ export default function SmartNutritionPrepList({
       )}
       {visiblePreps.length === 0 && (
         <div className="rounded-2xl bg-[#111114] px-4 py-4">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[#818cf8] font-semibold">Scénario prêt</p>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-white/55 font-semibold">Scénario prêt</p>
           <p className="text-[12px] text-white/62 mt-1">Ce scénario est vide pour l’instant. Compose un premier repas pour commencer ta comparaison.</p>
         </div>
       )}

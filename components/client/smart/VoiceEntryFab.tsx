@@ -41,12 +41,7 @@ export default function VoiceEntryFab({ lang = "fr", onSuccess, currentDate }: V
         <button
           onClick={() => router.push(currentDate ? `/client/nutrition/compose?date=${currentDate}` : "/client/nutrition/compose")}
           className="relative flex items-center justify-center h-11 w-11 rounded-[18px] transition-all active:scale-[0.93] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.22)]"
-          style={{
-            backgroundColor: '#111114',
-            color: '#818cf8',
-            backgroundImage: 'radial-gradient(circle, rgba(129,140,248,0.12) 1px, transparent 1px)',
-            backgroundSize: '14px 14px',
-          }}
+          style={{ background: '#1a1a1a', color: '#f2f2f2' }}
           aria-label="Ouvrir Smart Nutrition"
         >
           <Plus size={18} strokeWidth={2.4} />

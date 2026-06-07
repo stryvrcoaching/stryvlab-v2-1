@@ -47,6 +47,7 @@ interface Props {
   date: string
   target: NutritionMacros
   consumed: NutritionMacros
+  planningConsumed: NutritionMacros
   meals: NutritionMeal[]
   preps: SmartNutritionPrep[]
   alerts: GenericAlert[]
@@ -80,7 +81,7 @@ const TABS: { id: Tab; labelKey: ClientDictKey }[] = [
 ]
 
 export default function NutritionClientPage({
-  date, target, consumed, meals, preps, alerts, trend,
+  date, target, consumed, planningConsumed, meals, preps, alerts, trend,
   loggedDates, tdeeAdaptive, tdeeDataSource, bodyWeightKg,
   protocolDay, protocolDays, lang, dayTypeBadge,
   cycleSyncPhase, cycleSyncAdjustment, cycleDay,
@@ -179,7 +180,7 @@ export default function NutritionClientPage({
                 cycleDay={cycleDay ?? undefined}
               />
             )}
-            <SmartNutritionHero date={date} consumed={consumed} target={target} onWaterClick={() => setWaterOpen(true)} />
+            <SmartNutritionHero date={date} consumed={planningConsumed} target={target} onWaterClick={() => setWaterOpen(true)} />
             <SmartAlertsFeed alerts={alerts} />
             <RemainingBreakdown
               consumed={consumed}

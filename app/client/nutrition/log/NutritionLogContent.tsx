@@ -21,7 +21,7 @@ import { useClientT } from "@/components/client/ClientI18nProvider"
 import { NUTRITION_UI_COLORS } from "@/lib/nutrition/ui-colors"
 import { computeNutritionBalance } from "@/lib/nutrition/balance"
 import { evaluateFoodCompatibility, suggestQuantityForItem } from "@/lib/nutrition/compose-advisor"
-import { getRemainingNutritionTargets } from "@/lib/nutrition/remaining-targets"
+import { computeActionableRemaining } from "@/lib/nutrition/actionable-remaining"
 import RemainingNutritionSummary from "@/components/client/nutrition/RemainingNutritionSummary"
 import type { NutritionMacros } from "@/components/client/smart/SmartNutritionWidget"
 
@@ -190,6 +190,7 @@ function NutritionLogContent({
   const [searchQ, setSearchQ] = useState("")
   const [qMode, setQMode] = useState<"grams" | "portion">("grams")
   const [quantityG, setQuantityG] = useState<number>(100)
+  const [quantityInput, setQuantityInput] = useState("100")
   const [selectedPortion, setSelectedPortion] = useState<number>(0)
   const [portionMult, setPortionMult] = useState<number>(1)
   const [scalingProfile, setScalingProfile] = useState<PortionScalingProfile | null>(null)
@@ -263,14 +264,19 @@ function NutritionLogContent({
   function goTo(next: Layer, dir: number) { setDirection(dir); setLayer(next) }
   function selectCategory(cat: CategoryL1) { setSelectedCategory(cat); setSelectedSubcategory(null); goTo("subcategory", 1) }
   function selectSubcategory(sub: string) { setSelectedSubcategory(sub); setSearchQ(""); goTo("item", 1) }
+  function applyQuantity(next: number) {
+    const normalized = Math.max(0, Number.isFinite(next) ? next : 0)
+    setQuantityG(normalized)
+    setQuantityInput(normalized === 0 ? "" : String(normalized))
+  }
   function selectItem(item: FoodItem) {
     setSelectedItem(item)
     const suggested = macroBalance ? suggestQuantityForItem(item, macroBalance.remaining) : null
     if (composerMode === "guide" && suggested) {
-      setQuantityG(suggested.grams)
+      applyQuantity(suggested.grams)
       setDidAutoAdjust(true)
     } else {
-      setQuantityG(100)
+      applyQuantity(100)
       setDidAutoAdjust(false)
     }
     setSelectedPortion(0)
@@ -328,12 +334,12 @@ function NutritionLogContent({
 
   function applyPortion(idx: number, mult: number = portionMult) {
     setSelectedPortion(idx)
-    setQuantityG(getScaledPortionG(PORTION_SIZES[idx], scalingProfile, mult))
+    applyQuantity(getScaledPortionG(PORTION_SIZES[idx], scalingProfile, mult))
   }
 
   function applyMultiplier(mult: number) {
     setPortionMult(mult)
-    if (qMode === "portion") setQuantityG(getScaledPortionG(PORTION_SIZES[selectedPortion], scalingProfile, mult))
+    if (qMode === "portion") applyQuantity(getScaledPortionG(PORTION_SIZES[selectedPortion], scalingProfile, mult))
   }
 
   function addToMeal() {
@@ -502,11 +508,20 @@ function NutritionLogContent({
   const macroBalance = effectiveConsumed && balanceContext
     ? computeNutritionBalance(effectiveConsumed, balanceContext.target)
     : null
-  const remainingTargets = effectiveConsumed && balanceContext
-    ? getRemainingNutritionTargets({
-        dailyTargets: balanceContext.target,
-        consumedToday: effectiveConsumed,
+  const actionableRemaining = effectiveConsumed && balanceContext
+    ? computeActionableRemaining({
+        target: balanceContext.target,
+        consumed: effectiveConsumed,
       })
+    : null
+  const remainingTargets = actionableRemaining?.actionableRemaining ?? null
+  const remainingOverflow = actionableRemaining
+    ? {
+        calories: Math.max(0, effectiveConsumed.kcal - balanceContext.target.kcal),
+        protein: actionableRemaining.overflow.protein_g,
+        carbs: actionableRemaining.overflow.carbs_g,
+        fat: actionableRemaining.overflow.fat_g,
+      }
     : null
   const quantitySuggestion = selectedItem && macroBalance
     ? suggestQuantityForItem(selectedItem, macroBalance.remaining)
@@ -530,10 +545,10 @@ function NutritionLogContent({
         balanceContext.target,
       )
     : null
-  const previewRemainingTargets = selectedMacros && effectiveConsumed && balanceContext
-    ? getRemainingNutritionTargets({
-        dailyTargets: balanceContext.target,
-        consumedToday: {
+  const previewActionableRemaining = selectedMacros && effectiveConsumed && balanceContext
+    ? computeActionableRemaining({
+        target: balanceContext.target,
+        consumed: {
           kcal: effectiveConsumed.kcal + selectedMacros.calories_kcal,
           protein_g: effectiveConsumed.protein_g + selectedMacros.protein_g,
           carbs_g: effectiveConsumed.carbs_g + selectedMacros.carbs_g,
@@ -541,6 +556,7 @@ function NutritionLogContent({
         },
       })
     : null
+  const previewRemainingTargets = previewActionableRemaining?.actionableRemaining ?? null
   const layerTitle =
     layer === "category" ? t('log.title') :
     layer === "subcategory" ? (CATEGORY_LABELS_T[selectedCategory!] ?? "") :
@@ -633,7 +649,7 @@ function NutritionLogContent({
                     </p>
                   </div>
                 )}
-                {remainingTargets && <RemainingNutritionSummary remaining={remainingTargets} />}
+                {remainingTargets && <RemainingNutritionSummary remaining={remainingTargets} overflow={remainingOverflow ?? undefined} />}
 
                 {/* Repas habituels / favoris */}
                 {showFavoritesBlock && (
@@ -813,7 +829,7 @@ function NutritionLogContent({
                             </div>
                           </div>
                           {chipSuggestion ? (
-                            <span className="text-[10px] font-bold text-[#818cf8] shrink-0 ml-2 tabular-nums">~{chipSuggestion.grams}g</span>
+                            <span className="text-[10px] font-bold text-white/65 shrink-0 ml-2 tabular-nums">~{chipSuggestion.grams}g</span>
                           ) : (
                             <span className="text-white/20 text-[11px] shrink-0 ml-2">/ 100g</span>
                           )}
@@ -853,7 +869,7 @@ function NutritionLogContent({
                       </div>
                       <button
                         onClick={() => {
-                          setQuantityG(quantitySuggestion.grams)
+                          applyQuantity(quantitySuggestion.grams)
                           setDidAutoAdjust(true)
                         }}
                         className="w-full h-10 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] transition-all"
@@ -915,7 +931,7 @@ function NutritionLogContent({
                       <div className="grid grid-cols-4 gap-2 text-center">
                         <button
                           onClick={() => {
-                            setQuantityG(quantitySuggestion.grams)
+                            applyQuantity(quantitySuggestion.grams)
                             setDidAutoAdjust(true)
                           }}
                           className="col-span-2 h-10 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] transition-all"
@@ -1011,21 +1027,36 @@ function NutritionLogContent({
                         <p className="text-[10px] uppercase tracking-[0.12em] text-white/30 font-semibold mb-2">Quantite en grammes</p>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setQuantityG(v => Math.max(0, v - 5))}
+                            onClick={() => applyQuantity(quantityG - 5)}
                             className="h-10 w-10 rounded-xl bg-white/[0.06] text-white/70 flex items-center justify-center"
                           >
                             <Minus size={14} />
                           </button>
                           <input
-                            type="number"
-                            min={0}
-                            step={5}
-                            value={quantityG}
-                            onChange={e => setQuantityG(Math.max(0, Number(e.target.value || 0)))}
+                            type="text"
+                            inputMode="numeric"
+                            value={quantityInput}
+                            onChange={e => {
+                              const nextValue = e.target.value
+                              if (!/^\d*([.,]\d*)?$/.test(nextValue)) return
+                              setQuantityInput(nextValue)
+                              if (!nextValue.trim()) {
+                                setQuantityG(0)
+                                return
+                              }
+                              const parsed = Number(nextValue.replace(",", "."))
+                              if (Number.isFinite(parsed)) {
+                                setQuantityG(Math.max(0, parsed))
+                              }
+                            }}
+                            onBlur={() => {
+                              if (!quantityInput.trim()) return
+                              applyQuantity(quantityG)
+                            }}
                             className="flex-1 h-10 bg-white/[0.06] rounded-xl text-center text-[16px] font-bold text-white outline-none"
                           />
                           <button
-                            onClick={() => setQuantityG(v => v + 5)}
+                            onClick={() => applyQuantity(quantityG + 5)}
                             className="h-10 w-10 rounded-xl bg-white/[0.06] text-white/70 flex items-center justify-center"
                           >
                             <Plus size={14} />

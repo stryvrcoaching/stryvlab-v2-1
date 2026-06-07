@@ -5,11 +5,15 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { shiftIsoDate } from '@/lib/utils/date'
 import { getNutritionProgressMeta, type NutritionProgressState } from '@/lib/nutrition/progress'
 import { computeNutritionBalance } from '@/lib/nutrition/balance'
-import { getRemainingNutritionTargets } from '@/lib/nutrition/remaining-targets'
 import { computeActionableRemaining } from '@/lib/nutrition/actionable-remaining'
 import type { NutritionMacros } from './SmartNutritionWidget'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 import { useClientT } from '../ClientI18nProvider'
+
+const OVERFLOW_ALERT = {
+  calories: 4,
+  macro: 1,
+} as const
 
 type Props = {
   date: string
@@ -21,7 +25,6 @@ type Props = {
   bodyWeightKg?: number | null
   compact?: boolean
   micro?: boolean
-  showSimulationBadge?: boolean
 }
 
 // ── Arc geometry — 240° gauge ─────────────────────────────────────────────────
@@ -38,8 +41,6 @@ const MACRO_KEYS = [
   { key: 'carbs_g'   as const, iKey: 'nutrition.carbs' as const,   color: NUTRITION_UI_COLORS.carbs   },
   { key: 'fat_g'     as const, iKey: 'nutrition.fat' as const,     color: NUTRITION_UI_COLORS.fat     },
 ]
-
-const SIMULATION_COLOR = '#818cf8'
 
 const shiftDate = shiftIsoDate
 
@@ -72,63 +73,46 @@ export default function SmartNutritionHero({
   target,
   onWaterClick,
   simulationMode = false,
-  gender,
-  bodyWeightKg,
   compact = false,
   micro = false,
-  showSimulationBadge = true,
 }: Props) {
   const { t } = useClientT()
   const prev = shiftDate(date, -1)
   const next = shiftDate(date, 1)
-  const balance = computeNutritionBalance(consumed, target)
   const MACROS = MACRO_KEYS.map(m => ({ ...m, label: t(m.iKey as any) }))
-  const rawRemaining = getRemainingNutritionTargets({
-    dailyTargets: target,
-    consumedToday: consumed,
-  })
-  const actionableRemaining = computeActionableRemaining({
+  const actionable = computeActionableRemaining({
     target,
     consumed,
     profile: { gender, weightKg: bodyWeightKg },
   })
+  const informativeBalance = computeNutritionBalance(consumed, target)
 
   const kcalMeta   = getNutritionProgressMeta(consumed.kcal, target.kcal)
   const pct        = Math.min(kcalMeta.ratio, 1)
   const arcOffset  = ARC_LEN * (1 - pct)
-  const kcalColor  = getStateColor(kcalMeta.state, NUTRITION_UI_COLORS.calories)
-  const kcalStroke = simulationMode ? SIMULATION_COLOR : kcalColor
-  const remaining  = Math.round(balance.remainingCaloriesNet)
+  const kcalDelta = {
+    text:
+      informativeBalance.overflow.kcal >= OVERFLOW_ALERT.calories
+        ? `+${Math.round(informativeBalance.overflow.kcal)}`
+        : String(Math.round(actionable.actionableRemaining.calories)),
+    overflow: informativeBalance.overflow.kcal >= OVERFLOW_ALERT.calories,
+  }
+  const kcalColor  = kcalDelta.overflow ? '#ef4444' : NUTRITION_UI_COLORS.calories
+  const kcalStroke = kcalColor
 
   const waterMeta          = getNutritionProgressMeta(consumed.water_ml, target.water_ml)
   const waterOverflowLabel = formatOverflow((consumed.water_ml - target.water_ml) / 1000, 'L')
   const cardPadding = micro ? '8px' : compact ? '12px' : '18px'
   const arcHeight = micro ? 72 : compact ? 112 : 145
   const consumedTextSize = micro ? 'text-[18px]' : compact ? 'text-[22px]' : 'text-[28px]'
-  const sideTextSize = micro ? 'text-[15px]' : compact ? 'text-[17px]' : 'text-[20px]'
   const macroGapClass = micro ? 'gap-1.5 mt-0' : compact ? 'gap-2 mt-0.5' : 'gap-3 mt-2'
   const showMacroHelpers = !micro
 
   return (
     <div
       className="bg-[#111111] rounded-2xl"
-      style={simulationMode ? {
-        padding: cardPadding,
-        backgroundImage: 'radial-gradient(circle, rgba(129,140,248,0.07) 1px, transparent 1px)',
-        backgroundSize: '18px 18px',
-        backgroundColor: '#111111',
-      } : { padding: cardPadding }}
+      style={{ padding: cardPadding }}
     >
-
-      {/* ── Simulation badge ── */}
-      {simulationMode && showSimulationBadge && (
-        <div className={`flex items-center ${micro ? 'mb-1' : compact ? 'mb-1.5' : 'mb-3'}`}>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#818cf8]/10">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#818cf8] animate-pulse" />
-            <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[#818cf8]">Simulation</span>
-          </div>
-        </div>
-      )}
 
       {/* ── Date nav — hidden in simulation ── */}
       {!simulationMode && (
@@ -171,38 +155,22 @@ export default function SmartNutritionHero({
           className="absolute left-0 right-0 grid grid-cols-3 items-center px-1"
           style={{ top: '65.5%', transform: 'translateY(-50%)' }}
         >
-          {/* Restant */}
-          <div className="text-left">
-            <div className={`${sideTextSize} font-bold text-white tabular-nums leading-none`}>
-              {remaining}
-            </div>
-            <div className={`uppercase tracking-[0.14em] text-white/35 ${micro ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
-              Restant
-            </div>
-          </div>
+          <div />
 
-          {/* Consommé — larger, colored */}
+          {/* Delta calories */}
           <div className="text-center">
             <div
               className={`${consumedTextSize} font-black tabular-nums leading-none`}
               style={{ color: kcalStroke }}
             >
-              {Math.round(consumed.kcal)}
+              {kcalDelta.text}
             </div>
             <div className={`uppercase tracking-[0.14em] text-white/35 ${micro ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
-              {simulationMode ? 'Simulé' : 'Consommé'}
+              {kcalDelta.overflow ? 'Au-dessus' : 'Restant'}
             </div>
           </div>
 
-          {/* Objectif */}
-          <div className="text-right">
-            <div className={`${sideTextSize} font-bold text-white/50 tabular-nums leading-none`}>
-              {target.kcal}
-            </div>
-            <div className={`uppercase tracking-[0.14em] text-white/35 ${micro ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
-              Objectif
-            </div>
-          </div>
+          <div />
         </div>
       </div>
 
@@ -211,36 +179,40 @@ export default function SmartNutritionHero({
         {MACROS.map(m => {
           const consumedValue = consumed[m.key] ?? 0
           const rawTarget = target[m.key] ?? 0
-          const balanceKey = m.key as 'protein_g' | 'carbs_g' | 'fat_g'
-          const rawDelta =
-            simulationMode
-              ? balanceKey === 'protein_g'
-                ? actionableRemaining.actionableRemaining.protein
-                : balanceKey === 'carbs_g'
-                  ? actionableRemaining.actionableRemaining.carbs
-                  : actionableRemaining.actionableRemaining.fat
-              : balanceKey === 'protein_g'
-                ? rawRemaining.protein
-                : balanceKey === 'carbs_g'
-                  ? rawRemaining.carbs
-                  : rawRemaining.fat
-          const overflowValue = Math.max(0, -rawDelta)
-          const remainingValue = Math.max(0, rawDelta)
           const displayTarget = rawTarget
           const meta = getNutritionProgressMeta(consumedValue, Math.max(displayTarget, 0))
+          const macroKey =
+            m.key === 'protein_g'
+              ? 'protein_g'
+              : m.key === 'carbs_g'
+                ? 'carbs_g'
+                : 'fat_g'
+          const actionableRemaining =
+            macroKey === 'protein_g'
+              ? actionable.actionableRemaining.protein
+              : macroKey === 'carbs_g'
+                ? actionable.actionableRemaining.carbs
+                : actionable.actionableRemaining.fat
+          const overflowValue = actionable.overflow[macroKey]
+          const macroDelta = {
+            text:
+              overflowValue >= OVERFLOW_ALERT.macro
+                ? `+${Math.round(overflowValue)}`
+                : String(Math.round(actionableRemaining)),
+            overflow: overflowValue >= OVERFLOW_ALERT.macro,
+            remaining: actionableRemaining,
+          }
           const fillColor = simulationMode
-            ? overflowValue > 0
+            ? macroDelta.overflow
               ? '#ef4444'
-              : 'rgba(129,140,248,0.65)'
-            : getStateColor(
-                overflowValue > 0 ? 'over' : meta.state,
-                m.color,
-              )
+              : m.color
+            : macroDelta.overflow
+              ? '#ef4444'
+              : m.color
           const helperLabel =
-            overflowValue > 0
-              ? 'à freiner'
-              : formatRemainingLabel(remainingValue, 'g')
-          const overflow = formatOverflow(overflowValue, 'g')
+            macroDelta.overflow
+              ? 'au-dessus'
+              : formatRemainingLabel(macroDelta.remaining, 'g')
           return (
             <div key={m.key}>
               <div className={`text-white/40 uppercase font-bold tracking-[0.08em] ${micro ? 'text-[8px] mb-1' : 'text-[9px] mb-1.5'}`}>
@@ -256,14 +228,14 @@ export default function SmartNutritionHero({
                 className={`${micro ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'} font-bold tabular-nums`}
                 style={{ color: fillColor }}
               >
-                {Math.round(consumedValue)}<span className="text-white/25 text-[9px] font-normal">/{Math.round(displayTarget)}g</span>
+                {macroDelta.text}g
               </div>
               {showMacroHelpers && (
                 <div
                   className="text-[8px] font-bold mt-0.5 min-h-[12px]"
-                  style={{ color: overflow ? '#ef4444' : 'rgba(255,255,255,0.32)' }}
+                  style={{ color: macroDelta.overflow ? '#ef4444' : 'rgba(255,255,255,0.32)' }}
                 >
-                  {overflow ?? helperLabel}
+                  {helperLabel}
                 </div>
               )}
             </div>

@@ -40,7 +40,7 @@ export function calcAdaptiveTdee(input: AdaptiveTdeeInput): AdaptiveTdeeResult {
     throw new Error('At least 2 weight samples required')
   }
   const { slope } = linearRegression(input.weightSamples)
-  // MacroFactor method: TDEE = intake - (slope × 7700)
+  // Linear regression method: TDEE = intake - (slope × 7700)
   // Losing weight → slope < 0 → -slope > 0 → TDEE > intake ✓
   // Gaining weight → slope > 0 → -slope < 0 → TDEE < intake ✓
   const rawTdee = input.avgIntakeKcal - slope * 7700

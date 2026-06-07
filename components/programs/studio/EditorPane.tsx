@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, AlertCircle, ChevronDown, ChevronUp, Zap, Divide, X as Multiply } from 'lucide-react'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
 import ExerciseCard, { type ExerciseData } from './ExerciseCard'
@@ -59,6 +59,9 @@ export interface EditorSession {
   open: boolean
 }
 
+export type SessionQuickActionField = 'sets' | 'reps' | 'rir' | 'rest_sec'
+export type SessionQuickActionOperation = 'divide' | 'multiply'
+
 interface Props {
   meta: TemplateMeta
   sessions: EditorSession[]
@@ -86,6 +89,12 @@ interface Props {
   onToggleSuperset: (si: number, ei: number) => void
   onMoveSession: (fromSi: number, toSi: number) => void
   onMoveExercise: (fromSi: number, fromEi: number, toSi: number, toEi: number) => void
+  onApplySessionQuickAction: (
+    si: number,
+    field: SessionQuickActionField,
+    operation: SessionQuickActionOperation,
+    factor: number,
+  ) => void
   supersetGroupColors: Record<string, string>
   programId?: string
   exerciseRefSetter: (key: string) => (el: HTMLDivElement | null) => void
@@ -122,6 +131,7 @@ export default function EditorPane({
   onToggleSuperset,
   onMoveSession,
   onMoveExercise,
+  onApplySessionQuickAction,
   supersetGroupColors,
   programId,
   exerciseRefSetter,
@@ -131,6 +141,7 @@ export default function EditorPane({
 }: Props) {
   type TrendEntry = { trend: 'progression' | 'stagnation' | 'overtraining' | null; suggestion: string | null }
   const [trendMap, setTrendMap] = useState<Record<string, TrendEntry>>({})
+  const [quickActionOpenIndex, setQuickActionOpenIndex] = useState<number | null>(null)
 
   const fetchTrend = useCallback(async (exerciseName: string) => {
     if (!clientId || !exerciseName.trim()) return
@@ -239,7 +250,7 @@ export default function EditorPane({
             className="rounded-xl border-[0.3px] border-white/[0.06] bg-white/[0.01] overflow-hidden"
           >
             {/* Session header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b-[0.3px] border-white/[0.06]">
+            <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b-[0.3px] border-white/[0.06]">
               <button
                 onClick={() => onUpdateSession(si, { open: !session.open })}
                 className="p-0.5 text-white/30 hover:text-white/60 transition-colors"
@@ -274,6 +285,19 @@ export default function EditorPane({
                 placeholder={`Séance ${si + 1}`}
                 className="flex-1 bg-transparent text-[13px] font-semibold text-white placeholder:text-white/30 outline-none"
               />
+              <button
+                onClick={() => setQuickActionOpenIndex(current => current === si ? null : si)}
+                className={[
+                  'flex items-center gap-1.5 h-7 px-2.5 rounded-lg border-[0.3px] text-[10px] font-bold uppercase tracking-[0.08em] transition-colors shrink-0',
+                  quickActionOpenIndex === si
+                    ? 'border-[#1f8a65]/40 bg-[#1f8a65]/12 text-[#7ee0bc]'
+                    : 'border-white/[0.06] bg-white/[0.04] text-white/45 hover:text-white/75 hover:bg-white/[0.07]',
+                ].join(' ')}
+                title="Actions rapides sur toute la séance"
+              >
+                <Zap size={11} />
+                Action rapide
+              </button>
               {/* Day of week pills — multi-select (day mode only) */}
               {sessionMode === 'day' && (
                 <div className="flex items-center gap-1">
@@ -316,6 +340,40 @@ export default function EditorPane({
                 ×
               </button>
             </div>
+
+            {quickActionOpenIndex === si && (
+              <div className="px-4 py-3 border-b-[0.3px] border-white/[0.06] bg-white/[0.02] space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">
+                      Impact global
+                    </p>
+                    <p className="text-[11px] text-white/35">
+                      Applique un ajustement sur tous les exercices de la séance.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  <QuickActionRow
+                    label="Séries"
+                    onApply={(operation, factor) => onApplySessionQuickAction(si, 'sets', operation, factor)}
+                  />
+                  <QuickActionRow
+                    label="Répétitions"
+                    onApply={(operation, factor) => onApplySessionQuickAction(si, 'reps', operation, factor)}
+                  />
+                  <QuickActionRow
+                    label="RIR"
+                    onApply={(operation, factor) => onApplySessionQuickAction(si, 'rir', operation, factor)}
+                  />
+                  <QuickActionRow
+                    label="Repos"
+                    unit="sec"
+                    onApply={(operation, factor) => onApplySessionQuickAction(si, 'rest_sec', operation, factor)}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Exercises */}
             {session.open && (
@@ -399,4 +457,55 @@ function DroppableSession({
 }: { id: string; children: React.ReactNode; className?: string }) {
   const { setNodeRef } = useDroppable({ id })
   return <div ref={setNodeRef} className={className}>{children}</div>
+}
+
+function QuickActionRow({
+  label,
+  unit,
+  onApply,
+}: {
+  label: string
+  unit?: string
+  onApply: (operation: SessionQuickActionOperation, factor: number) => void
+}) {
+  return (
+    <div className="rounded-xl border-[0.3px] border-white/[0.06] bg-[#0f0f0f] p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[12px] font-semibold text-white">{label}</span>
+        {unit && <span className="text-[10px] uppercase tracking-[0.12em] text-white/25">{unit}</span>}
+      </div>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-red-300/85 min-w-10">
+            <Divide size={10} />
+            Div
+          </span>
+          {[2, 3, 4, 5].map(factor => (
+            <button
+              key={`divide-${factor}`}
+              onClick={() => onApply('divide', factor)}
+              className="flex-1 h-7 rounded-lg bg-red-500/10 text-red-200/85 text-[11px] font-semibold hover:bg-red-500/20 transition-colors"
+            >
+              /{factor}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-sky-300/85 min-w-10">
+            <Multiply size={10} />
+            Mult
+          </span>
+          {[2, 3, 4, 5].map(factor => (
+            <button
+              key={`multiply-${factor}`}
+              onClick={() => onApply('multiply', factor)}
+              className="flex-1 h-7 rounded-lg bg-sky-500/10 text-sky-200/85 text-[11px] font-semibold hover:bg-sky-500/20 transition-colors"
+            >
+              ×{factor}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }

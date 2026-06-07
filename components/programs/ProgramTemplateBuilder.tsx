@@ -40,6 +40,7 @@ import NavigatorPane from "./studio/NavigatorPane";
 import EditorPane from "./studio/EditorPane";
 import IntelligencePanelShell from "./studio/IntelligencePanelShell";
 import SaveAsTemplateModal from "./SaveAsTemplateModal";
+import type { SessionQuickActionField, SessionQuickActionOperation } from "./studio/EditorPane";
 
 const GOALS = [
   { value: "hypertrophy", label: "Hypertrophie" },
@@ -245,6 +246,51 @@ function emptySession(): Session {
     exercises: [emptyExercise()],
     open: true,
   };
+}
+
+function scaleWholeNumber(
+  value: number | null | undefined,
+  operation: SessionQuickActionOperation,
+  factor: number,
+  minimum: number,
+) {
+  if (value == null || !Number.isFinite(value)) return value ?? null
+  const scaled = operation === "divide" ? value / factor : value * factor
+  const rounded = operation === "divide" ? Math.floor(scaled) : Math.ceil(scaled)
+  return Math.max(minimum, rounded)
+}
+
+function scaleRestSeconds(
+  value: number | null | undefined,
+  operation: SessionQuickActionOperation,
+  factor: number,
+) {
+  if (value == null || !Number.isFinite(value)) return value ?? null
+  const scaled = operation === "divide" ? value / factor : value * factor
+  return Math.max(5, Math.round(scaled / 5) * 5)
+}
+
+function scaleRepsString(
+  reps: string,
+  operation: SessionQuickActionOperation,
+  factor: number,
+) {
+  const value = reps.trim()
+  if (!value) return reps
+
+  const rangeMatch = value.match(/^(\d+)\s*-\s*(\d+)$/)
+  if (rangeMatch) {
+    const start = scaleWholeNumber(Number(rangeMatch[1]), operation, factor, 1)
+    const end = scaleWholeNumber(Number(rangeMatch[2]), operation, factor, 1)
+    return `${Math.min(start ?? 1, end ?? 1)}-${Math.max(start ?? 1, end ?? 1)}`
+  }
+
+  const fixedMatch = value.match(/^(\d+)$/)
+  if (fixedMatch) {
+    return String(scaleWholeNumber(Number(fixedMatch[1]), operation, factor, 1) ?? fixedMatch[1])
+  }
+
+  return reps
 }
 
 interface Props {
@@ -607,6 +653,50 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
     );
   }
 
+  function applySessionQuickAction(
+    si: number,
+    field: SessionQuickActionField,
+    operation: SessionQuickActionOperation,
+    factor: number,
+  ) {
+    setSessions(prev =>
+      prev.map((session, sessionIndex) => {
+        if (sessionIndex !== si) return session
+
+        return {
+          ...session,
+          exercises: session.exercises.map(exercise => {
+            if (field === "sets") {
+              return {
+                ...exercise,
+                sets: scaleWholeNumber(exercise.sets, operation, factor, 1) ?? exercise.sets,
+              }
+            }
+
+            if (field === "reps") {
+              return {
+                ...exercise,
+                reps: scaleRepsString(exercise.reps, operation, factor),
+              }
+            }
+
+            if (field === "rir") {
+              return {
+                ...exercise,
+                rir: scaleWholeNumber(exercise.rir, operation, factor, 0),
+              }
+            }
+
+            return {
+              ...exercise,
+              rest_sec: scaleRestSeconds(exercise.rest_sec, operation, factor),
+            }
+          }),
+        }
+      }),
+    )
+  }
+
   const handleSave = useCallback(async () => {
     setError("");
     if (!meta.name.trim()) {
@@ -922,6 +1012,9 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             onMoveSession={(fromSi, toSi) => moveSession(rawSessionIndex(fromSi), rawSessionIndex(toSi))}
             onMoveExercise={(fromSi, fromEi, toSi, toEi) =>
               moveExercise(rawSessionIndex(fromSi), fromEi, rawSessionIndex(toSi), toEi)
+            }
+            onApplySessionQuickAction={(si, field, operation, factor) =>
+              applySessionQuickAction(rawSessionIndex(si), field, operation, factor)
             }
             makeExDragId={makeExId}
             sessionDropId={(si) => `session-${si}`}

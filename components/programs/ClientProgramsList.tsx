@@ -10,6 +10,7 @@ import {
   Trash2,
   BookmarkPlus,
   AlertTriangle,
+  Copy,
 } from "lucide-react";
 import SaveAsTemplateModal from "@/components/programs/SaveAsTemplateModal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,16 +35,19 @@ interface Program {
 interface Props {
   clientId: string;
   onSelectProgram: (program: Program) => void;
+  onProgramDuplicated?: (program: Program) => void;
   onCreateProgram?: () => void;
 }
 
-export default function ClientProgramsList({ clientId, onSelectProgram }: Props) {
+export default function ClientProgramsList({ clientId, onSelectProgram, onProgramDuplicated }: Props) {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Program | null>(null);
+  const [confirmDuplicate, setConfirmDuplicate] = useState<Program | null>(null);
   const [saveAsTemplateTarget, setSaveAsTemplateTarget] = useState<Program | null>(null);
 
   const fetchPrograms = useCallback(async () => {
@@ -98,6 +102,26 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
       }
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function confirmAndDuplicate() {
+    if (!confirmDuplicate) return;
+    const program = confirmDuplicate;
+    setConfirmDuplicate(null);
+    setDuplicatingId(program.id);
+    try {
+      const res = await fetch(`/api/programs/${program.id}/duplicate`, { method: "POST" });
+      const d = await res.json();
+      if (!res.ok || !d.program) {
+        throw new Error(d.error ?? "Erreur de duplication");
+      }
+      setPrograms((prev) => [d.program, ...prev]);
+      onProgramDuplicated?.(d.program);
+    } catch (e: any) {
+      setError(e.message ?? "Erreur de duplication");
+    } finally {
+      setDuplicatingId(null);
     }
   }
 
@@ -174,6 +198,37 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
         </div>
       </div>
     )}
+    {confirmDuplicate && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-[#181818] rounded-2xl p-6 w-full max-w-sm border-[0.3px] border-white/[0.06]">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0">
+              <Copy size={16} className="text-sky-300" />
+            </div>
+            <h3 className="font-bold text-white text-[15px]">Dupliquer le programme ?</h3>
+          </div>
+          <p className="text-[13px] text-white/55 mb-5 leading-relaxed">
+            Une copie complète de <span className="text-white font-medium">&ldquo;{confirmDuplicate.name}&rdquo;</span> sera créée
+            sous le nom <span className="text-white font-medium">&ldquo;{confirmDuplicate.name} copy&rdquo;</span>, prête à être modifiée sans
+            impacter l&apos;original.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmDuplicate(null)}
+              className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-[13px] text-white/55 hover:text-white/80 transition-colors font-medium"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={confirmAndDuplicate}
+              className="flex-1 py-2.5 rounded-xl bg-sky-500/80 text-white text-[13px] font-bold hover:bg-sky-500 transition-colors"
+            >
+              Dupliquer
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="space-y-4">
       {/* Liste programmes actifs */}
       {activePrograms.length === 0 ? (
@@ -192,8 +247,10 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
               program={program}
               togglingId={togglingId}
               deletingId={deletingId}
+              duplicatingId={duplicatingId}
               onSelect={() => onSelectProgram(program)}
               onToggle={() => toggleVisibility(program)}
+              onDuplicate={() => setConfirmDuplicate(program)}
               onDelete={() => setConfirmDelete(program)}
               onSaveAsTemplate={() => setSaveAsTemplateTarget(program)}
             />
@@ -214,8 +271,10 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
                 program={program}
                 togglingId={togglingId}
                 deletingId={deletingId}
+                duplicatingId={duplicatingId}
                 onSelect={() => onSelectProgram(program)}
                 onToggle={() => toggleVisibility(program)}
+                onDuplicate={() => setConfirmDuplicate(program)}
                 onDelete={() => setConfirmDelete(program)}
                 onSaveAsTemplate={() => setSaveAsTemplateTarget(program)}
               />
@@ -232,21 +291,26 @@ function ProgramRow({
   program,
   togglingId,
   deletingId,
+  duplicatingId,
   onSelect,
   onToggle,
+  onDuplicate,
   onDelete,
   onSaveAsTemplate,
 }: {
   program: Program;
   togglingId: string | null;
   deletingId: string | null;
+  duplicatingId: string | null;
   onSelect: () => void;
   onToggle: () => void;
+  onDuplicate: () => void;
   onDelete: () => void;
   onSaveAsTemplate: () => void;
 }) {
   const isToggling = togglingId === program.id;
   const isDeleting = deletingId === program.id;
+  const isDuplicating = duplicatingId === program.id;
 
   return (
     <div className="flex items-center gap-2 bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-xl p-3 hover:bg-white/[0.04] transition-colors group">
@@ -289,6 +353,19 @@ function ProgramRow({
       </button>
 
       {/* Bouton enregistrer comme template */}
+      <button
+        onClick={onDuplicate}
+        disabled={isDuplicating}
+        className="h-7 w-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-white/20 hover:bg-sky-500/10 hover:text-sky-300 transition-colors shrink-0"
+        title="Dupliquer le programme"
+      >
+        {isDuplicating ? (
+          <Loader2 size={10} className="animate-spin" />
+        ) : (
+          <Copy size={11} />
+        )}
+      </button>
+
       <button
         onClick={onSaveAsTemplate}
         className="h-7 w-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-white/20 hover:bg-white/[0.08] hover:text-white/60 transition-colors shrink-0"

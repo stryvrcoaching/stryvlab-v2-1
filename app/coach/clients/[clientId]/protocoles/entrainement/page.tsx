@@ -149,6 +149,7 @@ export default function EntrainementPage() {
               key={refreshKey}
               clientId={clientId}
               onSelectProgram={(p) => setSelectedProgram(p as Program)}
+              onProgramDuplicated={(p) => setSelectedProgram(p as Program)}
             />
           </>
         )}

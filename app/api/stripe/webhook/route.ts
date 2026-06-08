@@ -12,8 +12,17 @@ const supabase = createClient(
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is required to send emails');
+  }
+
+  return new Resend(apiKey);
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -74,7 +83,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Envoyer email via Resend
-      await resend.emails.send({
+      await getResendClient().emails.send({
         from: FROM_EMAIL,
         to: email,
         subject: 'Créez votre compte STRYV lab',

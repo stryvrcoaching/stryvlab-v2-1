@@ -629,8 +629,6 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams) {
     }),
   });
 }
-<<<<<<< HEAD
-=======
 
 // ─── 10. Alerte coach — message client requiert intervention ──────────────────
 
@@ -678,4 +676,3 @@ export async function sendCoachAlertEmail(params: SendCoachAlertEmailParams) {
     }),
   })
 }
->>>>>>> 7f92252 (fix: lazy init resend clients for preview build)

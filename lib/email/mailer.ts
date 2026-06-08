@@ -629,3 +629,53 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams) {
     }),
   });
 }
+<<<<<<< HEAD
+=======
+
+// ─── 10. Alerte coach — message client requiert intervention ──────────────────
+
+export interface SendCoachAlertEmailParams {
+  to: string
+  coachFirstName: string
+  clientFirstName: string
+  category: 'safety' | 'out_of_scope' | 'pattern_inquiry' | 'engagement' | 'weight_off_track'
+  messageExcerpt: string  // déjà tronqué à 200 chars par l'appelant
+  inboxUrl: string
+}
+
+const CATEGORY_LABELS: Record<SendCoachAlertEmailParams['category'], string> = {
+  safety: 'Sécurité — message urgent',
+  out_of_scope: 'Hors périmètre — à traiter',
+  pattern_inquiry: 'Question de comportement',
+  engagement: 'Client inactif',
+  weight_off_track: 'Poids hors objectif',
+}
+
+export async function sendCoachAlertEmail(params: SendCoachAlertEmailParams) {
+  const { to, coachFirstName, clientFirstName, category, messageExcerpt, inboxUrl } = params
+
+  const isSafety = category === 'safety'
+  const subjectPrefix = isSafety ? '🚨 [Urgent] ' : '⚡ Action requise — '
+  const subject = `${subjectPrefix}${clientFirstName} vous a envoyé un message`
+
+  const categoryLabel = CATEGORY_LABELS[category]
+
+  await sendMail({
+    from: FROM,
+    to,
+    subject,
+    html: emailTemplate({
+      body: `
+        ${greeting(coachFirstName)}
+        ${bodyText(`<strong style="color:${DS.white};">${clientFirstName}</strong> vous a envoyé un message qui demande votre attention.`)}
+        ${infoTable([
+          { label: 'Catégorie', value: categoryLabel, accent: isSafety },
+          { label: 'Extrait', value: `"${messageExcerpt}"` },
+        ])}
+        ${ctaButton(inboxUrl, 'Voir dans l\'espace coach')}
+        ${hint('Ce message a été automatiquement signalé par le système STRYVR. Répondez depuis votre espace coach.')}
+      `,
+    }),
+  })
+}
+>>>>>>> 7f92252 (fix: lazy init resend clients for preview build)

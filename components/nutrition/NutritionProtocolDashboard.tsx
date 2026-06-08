@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { CheckCircle2, Clock, Plus, Edit2, Trash2, Share2, EyeOff } from 'lucide-react'
+import { CheckCircle2, Clock, Plus, Edit2, Trash2, Share2, EyeOff, Sparkles, AlertTriangle } from 'lucide-react'
 import type { NutritionProtocol, NutritionProtocolDay } from '@/lib/nutrition/types'
 
 function DeleteConfirmModal({ name, onConfirm, onCancel, loading }: {
@@ -96,6 +96,11 @@ export default function NutritionProtocolDashboard({ protocols, onRefresh }: Pro
   const clientId = params.clientId as string
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState<string | null>(null)
+  const [generateMeta, setGenerateMeta] = useState<{
+    tdee: number; calories: number; goal: string; bmrSource: string; warnings: string[]
+  } | null>(null)
 
   const shared = protocols.find(p => p.status === 'shared')
   const drafts = protocols.filter(p => p.status !== 'shared')
@@ -112,6 +117,26 @@ export default function NutritionProtocolDashboard({ protocols, onRefresh }: Pro
     await fetch(`/api/clients/${clientId}/nutrition-protocols/${protocolId}/unshare`, { method: 'POST' })
     setActionLoading(null)
     onRefresh()
+  }
+
+  async function handleGenerate() {
+    setGenerating(true)
+    setGenerateError(null)
+    setGenerateMeta(null)
+    try {
+      const res = await fetch(`/api/clients/${clientId}/nutrition-protocols/generate`, { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) {
+        setGenerateError(json.error ?? 'Erreur lors de la génération.')
+        return
+      }
+      setGenerateMeta(json.meta)
+      onRefresh()
+    } catch {
+      setGenerateError('Erreur réseau. Réessayez.')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   async function handleDelete() {
@@ -209,13 +234,28 @@ export default function NutritionProtocolDashboard({ protocols, onRefresh }: Pro
           <Plus size={20} className="text-white/20" />
         </div>
         <p className="text-[14px] font-semibold text-white/60 mb-1">Aucun protocole nutritionnel</p>
-        <p className="text-[12px] text-white/30 mb-6">Créez le premier protocole pour ce client</p>
-        <Link
-          href={`/coach/clients/${clientId}/protocoles/nutrition/new`}
-          className="flex items-center gap-2 h-9 px-4 rounded-xl bg-[#1f8a65] text-white text-[12px] font-bold uppercase tracking-[0.12em] hover:bg-[#217356] transition-colors"
-        >
-          <Plus size={14} /> Créer un protocole
-        </Link>
+        <p className="text-[12px] text-white/30 mb-6">Créez manuellement ou laissez l'IA générer un brouillon</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="flex items-center gap-2 h-9 px-4 rounded-xl bg-[#1f8a65]/10 border border-[#1f8a65]/30 text-[#1f8a65] text-[12px] font-bold uppercase tracking-[0.12em] hover:bg-[#1f8a65]/20 transition-colors disabled:opacity-50"
+          >
+            <Sparkles size={14} />
+            {generating ? 'Génération...' : 'Générer (IA)'}
+          </button>
+          <Link
+            href={`/coach/clients/${clientId}/protocoles/nutrition/new`}
+            className="flex items-center gap-2 h-9 px-4 rounded-xl bg-[#1f8a65] text-white text-[12px] font-bold uppercase tracking-[0.12em] hover:bg-[#217356] transition-colors"
+          >
+            <Plus size={14} /> Créer manuellement
+          </Link>
+        </div>
+        {generateError && (
+          <div className="mt-4 flex items-center gap-2 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+            <AlertTriangle size={12} /> {generateError}
+          </div>
+        )}
       </div>
     )
   }
@@ -227,6 +267,46 @@ export default function NutritionProtocolDashboard({ protocols, onRefresh }: Pro
 
   return (
     <>
+      {/* Generate CTA + feedback */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] text-white/30 font-semibold uppercase tracking-[0.12em]">
+          {protocols.length} protocole{protocols.length !== 1 ? 's' : ''}
+        </p>
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-[#1f8a65]/10 border border-[#1f8a65]/20 text-[#1f8a65] text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-[#1f8a65]/20 transition-all disabled:opacity-50 active:scale-95"
+        >
+          <Sparkles size={12} />
+          {generating ? 'Génération...' : 'Générer (IA)'}
+        </button>
+      </div>
+
+      {generateError && (
+        <div className="mb-3 flex items-center gap-2 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5">
+          <AlertTriangle size={12} className="shrink-0" /> {generateError}
+        </div>
+      )}
+
+      {generateMeta && (
+        <div className="mb-3 bg-[#1f8a65]/10 border border-[#1f8a65]/20 rounded-xl px-3 py-2.5 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={11} className="text-[#1f8a65] shrink-0" />
+            <p className="text-[11px] font-bold text-[#1f8a65]">Protocole généré — brouillon ajouté</p>
+          </div>
+          <p className="text-[10px] text-white/50 tabular-nums">
+            TDEE {generateMeta.tdee} kcal → Objectif {generateMeta.calories} kcal
+            {' · '}BMR via {generateMeta.bmrSource}
+            {' · '}Objectif : {generateMeta.goal}
+          </p>
+          {generateMeta.warnings.length > 0 && (
+            <p className="text-[10px] text-amber-400/80">
+              ⚠ {generateMeta.warnings[0]}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         {allProtocols.map(({ protocol, isActive }) => renderProtocolCard(protocol, isActive))}
       </div>

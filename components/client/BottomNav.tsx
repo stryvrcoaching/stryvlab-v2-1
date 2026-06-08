@@ -11,7 +11,7 @@ import dynamic from "next/dynamic";
 
 const QuickLogSheet = dynamic(() => import("@/components/client/QuickLogSheet"), { ssr: false });
 
-const LEFT_NAV:  { href: string; labelKey: ClientDictKey; Icon: React.ElementType }[] = [
+const LEFT_NAV: { href: string; labelKey: ClientDictKey; Icon: React.ElementType }[] = [
   { href: "/client",           labelKey: "nav.chat",      Icon: ChatCircle },
   { href: "/client/programme", labelKey: "nav.programme", Icon: Barbell },
 ];
@@ -21,10 +21,10 @@ const RIGHT_NAV: { href: string; labelKey: ClientDictKey; Icon: React.ElementTyp
 ];
 
 export default function BottomNav() {
-  const pathname             = usePathname();
-  const { t }                = useClientT();
+  const pathname                = usePathname();
+  const { t }                   = useClientT();
   const { highlightedNavIndex } = useTour();
-  const [logOpen, setLogOpen] = useState(false);
+  const [logOpen, setLogOpen]   = useState(false);
   const [chatPendingCheckins, setChatPendingCheckins] = useState(0);
 
   useEffect(() => {
@@ -33,13 +33,11 @@ export default function BottomNav() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled || !data?.checkin) return;
-        const pending = Number(!data.checkin.morning) + Number(!data.checkin.evening);
+        const pending = Number(!data.checkin?.morning) + Number(!data.checkin?.evening);
         setChatPendingCheckins(pending);
       })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [pathname]);
 
   function isActive(href: string, idx: number, offset = 0) {
@@ -49,29 +47,57 @@ export default function BottomNav() {
     return pathname.startsWith(href);
   }
 
-  const navItem = (href: string, labelKey: ClientDictKey, Icon: React.ElementType, active: boolean) => (
+  const navItem = (
+    href: string,
+    labelKey: ClientDictKey,
+    Icon: React.ElementType,
+    active: boolean,
+  ) => (
     <Link
       key={href}
       href={href}
-      className={`flex flex-col items-center justify-center gap-[5px] flex-1 h-full transition-all duration-200 active:scale-[0.92] ${
-        active ? "text-[#f2f2f2]" : "text-[#5a5a5a] hover:text-[#808080]"
-      }`}
+      className="flex flex-col items-center justify-center gap-[5px] flex-1 h-full"
+      style={{ WebkitTapHighlightColor: "transparent" }}
     >
-      <div className="relative">
-        <Icon size={active ? 26 : 23} weight={active ? "fill" : "regular"} />
+      {/* Pill active wrapping the icon */}
+      <div
+        className="relative flex items-center justify-center"
+        style={{
+          width:        active ? 48 : 36,
+          height:       28,
+          borderRadius: 14,
+          background:   active ? "#f2f2f2" : "transparent",
+          transition:   "width 320ms cubic-bezier(0.34,1.56,0.64,1), background 220ms ease",
+        }}
+      >
+        <Icon
+          size={active ? 15 : 19}
+          weight={active ? "fill" : "regular"}
+          style={{
+            color:      active ? "#080808" : "#4a4a4a",
+            transition: "color 220ms ease",
+            display:    "block",
+          }}
+        />
+
+        {/* Checkin badge */}
         {href === "/client" && chatPendingCheckins > 0 && (
           <span
-            className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] leading-[16px] text-center font-bold"
+            className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] px-[3px] rounded-full text-[8px] leading-[14px] text-center font-bold tabular-nums"
             style={{ background: "#A67C52", color: "#080808" }}
           >
             {chatPendingCheckins}
           </span>
         )}
       </div>
+
+      {/* Label */}
       <span
-        className={`text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] leading-none transition-all duration-200 ${
-          active ? "text-[#f2f2f2]" : "text-[#5a5a5a]"
-        }`}
+        className="text-[8.5px] font-barlow-condensed font-bold uppercase tracking-[0.14em] leading-none"
+        style={{
+          color:      active ? "#c8c8c8" : "#383838",
+          transition: "color 220ms ease",
+        }}
       >
         {t(labelKey)}
       </span>
@@ -81,31 +107,83 @@ export default function BottomNav() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 pointer-events-none"
+        className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto mb-2 w-[min(520px,calc(100%-16px))] pointer-events-auto rounded-[22px] border border-white/[0.08] bg-[#101010]/95 backdrop-blur-md shadow-[0_12px_30px_rgba(0,0,0,0.45)]">
-          <div className="flex items-center h-[62px] px-2">
-          {/* Left tabs */}
-          {LEFT_NAV.map(({ href, labelKey, Icon }, i) =>
-            navItem(href, labelKey, Icon, isActive(href, i, 0))
-          )}
+        <div className="pointer-events-auto w-full max-w-[520px] px-4 pb-3">
+          <div
+            className="flex items-center h-[62px] px-1"
+            style={{
+              background:            "rgba(12,12,12,0.94)",
+              backdropFilter:        "blur(28px) saturate(160%)",
+              WebkitBackdropFilter:  "blur(28px) saturate(160%)",
+              borderRadius:          22,
+              border:                "0.5px solid rgba(255,255,255,0.065)",
+              boxShadow:
+                "0 1px 0 rgba(255,255,255,0.04) inset, " +
+                "0 12px 40px rgba(0,0,0,0.65), " +
+                "0 2px 8px rgba(0,0,0,0.4)",
+            }}
+          >
+            {/* Left tabs */}
+            {LEFT_NAV.map(({ href, labelKey, Icon }, i) =>
+              navItem(href, labelKey, Icon, isActive(href, i, 0))
+            )}
 
-          {/* Central FAB */}
-          <div className="flex flex-col items-center justify-center flex-1 h-full">
-            <button
-              onClick={() => setLogOpen(true)}
-              className="w-[50px] h-[50px] rounded-full bg-[#f2f2f2] flex items-center justify-center active:scale-[0.92] transition-transform shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
-              aria-label="Logger"
-            >
-              <Plus size={22} weight="bold" className="text-[#080808]" />
-            </button>
-          </div>
+            {/* Central FAB */}
+            <div className="flex flex-col items-center justify-center flex-1 h-full">
+              <button
+                onClick={() => setLogOpen((v) => !v)}
+                aria-label="Logger une série"
+                style={{
+                  width:                  44,
+                  height:                 44,
+                  borderRadius:           "50%",
+                  background:             "#f2f2f2",
+                  display:                "flex",
+                  alignItems:             "center",
+                  justifyContent:         "center",
+                  flexShrink:             0,
+                  border:                 "0.5px solid rgba(255,255,255,0.10)",
+                  boxShadow:
+                    "0 2px 14px rgba(0,0,0,0.55), " +
+                    "0 1px 0 rgba(255,255,255,0.18) inset",
+                  WebkitTapHighlightColor: "transparent",
+                  // transition géré inline — voir pointer events
+                }}
+                onPointerDown={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.transform  = "scale(0.87)";
+                  el.style.boxShadow  = "0 1px 6px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.14) inset";
+                }}
+                onPointerUp={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.transform  = "scale(1)";
+                  el.style.boxShadow  = "0 2px 14px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.18) inset";
+                }}
+                onPointerLeave={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.transform  = "scale(1)";
+                  el.style.boxShadow  = "0 2px 14px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.18) inset";
+                }}
+              >
+                <Plus
+                  size={17}
+                  weight="bold"
+                  style={{
+                    color:      "#080808",
+                    display:    "block",
+                    transform:  logOpen ? "rotate(45deg)" : "rotate(0deg)",
+                    transition: "transform 320ms cubic-bezier(0.34,1.56,0.64,1)",
+                  }}
+                />
+              </button>
+            </div>
 
-          {/* Right tabs */}
-          {RIGHT_NAV.map(({ href, labelKey, Icon }, i) =>
-            navItem(href, labelKey, Icon, isActive(href, i, 2))
-          )}
+            {/* Right tabs */}
+            {RIGHT_NAV.map(({ href, labelKey, Icon }, i) =>
+              navItem(href, labelKey, Icon, isActive(href, i, 2))
+            )}
           </div>
         </div>
       </nav>

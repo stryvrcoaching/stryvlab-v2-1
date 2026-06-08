@@ -153,6 +153,39 @@ function getSeriesDelta(
   return values[values.length - 1].value - values[0].value;
 }
 
+function convertBodyDataToSeries(bodyData: any): MetricSeries {
+  const series: MetricSeries = {};
+  if (!bodyData) return series;
+
+  if (Array.isArray(bodyData.weightSeries)) {
+    series.weight_kg = bodyData.weightSeries;
+  }
+  if (Array.isArray(bodyData.bodyFatSeries)) {
+    series.body_fat_pct = bodyData.bodyFatSeries;
+  }
+  if (Array.isArray(bodyData.leanMassSeries)) {
+    series.lean_mass_kg = bodyData.leanMassSeries;
+  }
+
+  const checkins = bodyData.checkinSeries;
+  if (checkins && typeof checkins === "object") {
+    if (Array.isArray(checkins.weight_kg)) {
+      series.weight_kg = checkins.weight_kg;
+    }
+    if (Array.isArray(checkins.sleep_duration_h)) {
+      series.sleep_duration_h = checkins.sleep_duration_h;
+    }
+    if (Array.isArray(checkins.energy_level)) {
+      series.energy_level = checkins.energy_level;
+    }
+    if (Array.isArray(checkins.stress_level)) {
+      series.stress_level = checkins.stress_level;
+    }
+  }
+
+  return series;
+}
+
 function estimateFatMass(series: MetricSeries | null): number | null {
   const fatMass = getLatestSeriesValue(series, "fat_mass_kg");
   if (fatMass != null) return fatMass;
@@ -207,8 +240,12 @@ function KpiStat({
         <Icon size={13} style={{ color }} />
       </div>
       <div className="min-w-0">
-        <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider truncate">{label}</p>
-        <p className="text-[13px] font-bold text-white font-mono leading-tight">{value}</p>
+        <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider truncate">
+          {label}
+        </p>
+        <p className="text-[13px] font-bold text-white font-mono leading-tight">
+          {value}
+        </p>
         {sub && <p className="text-[9px] text-white/35 truncate">{sub}</p>}
       </div>
     </div>
@@ -275,16 +312,16 @@ export default function PerformanceDashboard({
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [perfRes, metricsRes] = await Promise.all([
+    const [perfRes, bodyDataRes] = await Promise.all([
       fetch(`/api/clients/${clientId}/performance?days=${period}`),
-      fetch(`/api/clients/${clientId}/metrics`),
+      fetch(`/api/coach/clients/${clientId}/body-data`),
     ]);
 
     const perfData = await perfRes.json();
-    const metricsData = await metricsRes.json().catch(() => ({ series: {} }));
+    const bodyData = await bodyDataRes.json().catch(() => null);
 
     setData(perfData);
-    setMetricsSeries(metricsData.series ?? {});
+    setMetricsSeries(convertBodyDataToSeries(bodyData));
 
     if (!selectedExercise && perfData.exercises?.[0])
       setSelectedExercise(perfData.exercises[0].name);
@@ -381,7 +418,7 @@ export default function PerformanceDashboard({
       : null;
   const weightStable =
     deltaWeight != null ? Math.abs(deltaWeight) <= 0.5 : false;
-  const sleepDelta = getSeriesDelta(metricsSeries, "sleep_hours");
+  const sleepDelta = getSeriesDelta(metricsSeries, "sleep_duration_h");
   const stressDelta = getSeriesDelta(metricsSeries, "stress_level");
   const energyDelta = getSeriesDelta(metricsSeries, "energy_level");
 
@@ -565,98 +602,141 @@ export default function PerformanceDashboard({
           {/* ── KPIs strip ── */}
           <div className="bg-[#181818] border-subtle rounded-xl px-4 py-3 flex items-center gap-0 flex-wrap">
             {[
-              { label: "Séances", value: String(kpis.totalSessions), sub: `${kpis.completedSessions} complétées`, icon: Dumbbell, color: "#6366f1" },
-              { label: "Volume", value: formatVolume(kpis.totalVolume), sub: "kg soulevés", icon: TrendingUp, color: "#10b981" },
-              { label: "Sets", value: String(kpis.totalSets), icon: Target, color: "#f59e0b" },
-              { label: "Reps", value: kpis.totalReps.toLocaleString("fr-FR"), icon: Activity, color: "#3b82f6" },
-              { label: "Durée moy.", value: kpis.avgDuration ? `${kpis.avgDuration} min` : "—", icon: Clock, color: "#ec4899" },
-              { label: "Intensité", value: rpeTrend.length ? `RPE ${(rpeTrend.reduce((a, r) => a + r.avgRpe, 0) / rpeTrend.length).toFixed(1)}` : "—", sub: "moyenne", icon: Zap, color: "#f97316" },
+              {
+                label: "Séances",
+                value: String(kpis.totalSessions),
+                sub: `${kpis.completedSessions} complétées`,
+                icon: Dumbbell,
+                color: "#6366f1",
+              },
+              {
+                label: "Volume",
+                value: formatVolume(kpis.totalVolume),
+                sub: "kg soulevés",
+                icon: TrendingUp,
+                color: "#10b981",
+              },
+              {
+                label: "Sets",
+                value: String(kpis.totalSets),
+                icon: Target,
+                color: "#f59e0b",
+              },
+              {
+                label: "Reps",
+                value: kpis.totalReps.toLocaleString("fr-FR"),
+                icon: Activity,
+                color: "#3b82f6",
+              },
+              {
+                label: "Durée moy.",
+                value: kpis.avgDuration ? `${kpis.avgDuration} min` : "—",
+                icon: Clock,
+                color: "#ec4899",
+              },
+              {
+                label: "Intensité",
+                value: rpeTrend.length
+                  ? `RPE ${(rpeTrend.reduce((a, r) => a + r.avgRpe, 0) / rpeTrend.length).toFixed(1)}`
+                  : "—",
+                sub: "moyenne",
+                icon: Zap,
+                color: "#f97316",
+              },
             ].map((stat, i, arr) => (
               <div key={stat.label} className="flex items-center">
                 <KpiStat {...stat} />
-                {i < arr.length - 1 && <div className="w-px h-8 bg-white/[0.06] mx-4 shrink-0" />}
+                {i < arr.length - 1 && (
+                  <div className="w-px h-8 bg-white/[0.06] mx-4 shrink-0" />
+                )}
               </div>
             ))}
           </div>
 
-          {hasNutritionData && <div className="bg-[#181818] border-subtle rounded-xl p-5 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.24em] text-white/40">
-                  Diagnostics automatisés
-                </p>
-                <h3 className="font-bold text-white text-sm mt-1">
-                  Analyse nutrition & performance
-                </h3>
+          {hasNutritionData && (
+            <div className="bg-[#181818] border-subtle rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-white/40">
+                    Diagnostics automatisés
+                  </p>
+                  <h3 className="font-bold text-white text-sm mt-1">
+                    Analyse nutrition & performance
+                  </h3>
+                </div>
+                <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[11px] text-white/60">
+                  {performanceOutcome()}
+                </span>
               </div>
-              <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[11px] text-white/60">
-                {performanceOutcome()}
-              </span>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-white/[0.03] p-3">
+                  <p className="text-[11px] text-white/45 mb-2">
+                    Synthèse du delta
+                  </p>
+                  <p className="text-sm text-white leading-snug">
+                    {adherenceLabel} ·{" "}
+                    {latestWeight != null
+                      ? `${formatSign(deltaWeight)} kg`
+                      : "Poids indisponible"}
+                  </p>
+                  <p className="text-[11px] text-white/45 mt-2">
+                    {latestBmr != null
+                      ? `BMR ${Math.round(latestBmr)} kcal`
+                      : ""}
+                    {latestBmr != null && latestMuscleMass != null ? " · " : ""}
+                    {latestMuscleMass != null
+                      ? `Muscle ${latestMuscleMass.toFixed(1)} kg`
+                      : ""}
+                    {(latestBmr != null || latestMuscleMass != null) &&
+                    latestFatMass != null
+                      ? " · "
+                      : ""}
+                    {latestFatMass != null
+                      ? `Graisse ${latestFatMass.toFixed(1)} kg`
+                      : ""}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-3">
+                  <p className="text-[11px] text-white/45 mb-2">Conclusion</p>
+                  <p className="text-sm text-white leading-snug">
+                    {analysisConclusion()}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-3">
+                  <p className="text-[11px] text-white/45 mb-2">
+                    Action directe
+                  </p>
+                  <p className="text-sm text-white leading-snug">
+                    {analysisAction()}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-xl bg-white/[0.03] p-3">
+                  <p className="text-[11px] text-white/45 mb-2">PR Score</p>
+                  <p className="text-sm text-white">
+                    {prScore != null ? prScore.toFixed(2) : "Non calculable"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-3">
+                  <p className="text-[11px] text-white/45 mb-2">Prot./kg</p>
+                  <p className="text-sm text-white">
+                    {proteinPerKg != null
+                      ? `${proteinPerKg.toFixed(2)} g/kg`
+                      : "Indisponible"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-3">
+                  <p className="text-[11px] text-white/45 mb-2">Δ graisse</p>
+                  <p className="text-sm text-white">
+                    {deltaFatMass != null
+                      ? `${formatSign(deltaFatMass)} kg`
+                      : "Indisponible"}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-white/[0.03] p-3">
-                <p className="text-[11px] text-white/45 mb-2">
-                  Synthèse du delta
-                </p>
-                <p className="text-sm text-white leading-snug">
-                  {adherenceLabel} ·{" "}
-                  {latestWeight != null
-                    ? `${formatSign(deltaWeight)} kg`
-                    : "Poids indisponible"}
-                </p>
-                <p className="text-[11px] text-white/45 mt-2">
-                  {latestBmr != null ? `BMR ${Math.round(latestBmr)} kcal` : ""}
-                  {latestBmr != null && latestMuscleMass != null ? " · " : ""}
-                  {latestMuscleMass != null
-                    ? `Muscle ${latestMuscleMass.toFixed(1)} kg`
-                    : ""}
-                  {(latestBmr != null || latestMuscleMass != null) &&
-                  latestFatMass != null
-                    ? " · "
-                    : ""}
-                  {latestFatMass != null
-                    ? `Graisse ${latestFatMass.toFixed(1)} kg`
-                    : ""}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/[0.03] p-3">
-                <p className="text-[11px] text-white/45 mb-2">Conclusion</p>
-                <p className="text-sm text-white leading-snug">
-                  {analysisConclusion()}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/[0.03] p-3">
-                <p className="text-[11px] text-white/45 mb-2">Action directe</p>
-                <p className="text-sm text-white leading-snug">
-                  {analysisAction()}
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-xl bg-white/[0.03] p-3">
-                <p className="text-[11px] text-white/45 mb-2">PR Score</p>
-                <p className="text-sm text-white">
-                  {prScore != null ? prScore.toFixed(2) : "Non calculable"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/[0.03] p-3">
-                <p className="text-[11px] text-white/45 mb-2">Prot./kg</p>
-                <p className="text-sm text-white">
-                  {proteinPerKg != null
-                    ? `${proteinPerKg.toFixed(2)} g/kg`
-                    : "Indisponible"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/[0.03] p-3">
-                <p className="text-[11px] text-white/45 mb-2">Δ graisse</p>
-                <p className="text-sm text-white">
-                  {deltaFatMass != null
-                    ? `${formatSign(deltaFatMass)} kg`
-                    : "Indisponible"}
-                </p>
-              </div>
-            </div>
-          </div>}
+          )}
 
           {/* ── Volume / Reps / Sets Timeline ── */}
           <div className="bg-[#181818] border-subtle rounded-xl p-5">
@@ -732,8 +812,12 @@ export default function PerformanceDashboard({
               </ResponsiveContainer>
             ) : (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
-                <p className="text-xs text-white/45 text-center">Pas assez de données pour afficher la courbe</p>
-                <p className="text-[10px] text-white/25 text-center">Minimum 2 séances sur la période sélectionnée</p>
+                <p className="text-xs text-white/45 text-center">
+                  Pas assez de données pour afficher la courbe
+                </p>
+                <p className="text-[10px] text-white/25 text-center">
+                  Minimum 2 séances sur la période sélectionnée
+                </p>
               </div>
             )}
           </div>
@@ -787,8 +871,12 @@ export default function PerformanceDashboard({
                 </ResponsiveContainer>
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 gap-2">
-                  <p className="text-xs text-white/45 text-center">Pas assez de groupes musculaires</p>
-                  <p className="text-[10px] text-white/25 text-center">Minimum 3 groupes requis pour le radar</p>
+                  <p className="text-xs text-white/45 text-center">
+                    Pas assez de groupes musculaires
+                  </p>
+                  <p className="text-[10px] text-white/25 text-center">
+                    Minimum 3 groupes requis pour le radar
+                  </p>
                 </div>
               )}
             </div>
@@ -932,17 +1020,32 @@ export default function PerformanceDashboard({
                 </h3>
                 {(() => {
                   if (!selectedEx || selectedEx.sessions.length < 2) {
-                    return <p className="text-xs text-white/45 mt-0.5">Évolution du poids max par séance</p>;
+                    return (
+                      <p className="text-xs text-white/45 mt-0.5">
+                        Évolution du poids max par séance
+                      </p>
+                    );
                   }
                   const first = selectedEx.sessions[0].maxWeight;
-                  const last = selectedEx.sessions[selectedEx.sessions.length - 1].maxWeight;
+                  const last =
+                    selectedEx.sessions[selectedEx.sessions.length - 1]
+                      .maxWeight;
                   const delta = last - first;
                   const sign = delta >= 0 ? "+" : "";
                   return (
                     <p className="text-xs mt-0.5">
-                      <span className="text-white/45">{first} kg → {last} kg · </span>
-                      <span className={delta >= 0 ? "text-accent font-bold" : "text-red-400 font-bold"}>
-                        {sign}{delta.toFixed(1)} kg
+                      <span className="text-white/45">
+                        {first} kg → {last} kg ·{" "}
+                      </span>
+                      <span
+                        className={
+                          delta >= 0
+                            ? "text-accent font-bold"
+                            : "text-red-400 font-bold"
+                        }
+                      >
+                        {sign}
+                        {delta.toFixed(1)} kg
                       </span>
                     </p>
                   );
@@ -1015,8 +1118,13 @@ export default function PerformanceDashboard({
               </ResponsiveContainer>
             ) : (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
-                <p className="text-xs text-white/45 text-center">Pas assez de données de progression</p>
-                <p className="text-[10px] text-white/25 text-center">Active la double progression sur un programme et attends la première séance complétée.</p>
+                <p className="text-xs text-white/45 text-center">
+                  Pas assez de données de progression
+                </p>
+                <p className="text-[10px] text-white/25 text-center">
+                  Active la double progression sur un programme et attends la
+                  première séance complétée.
+                </p>
               </div>
             )}
           </div>

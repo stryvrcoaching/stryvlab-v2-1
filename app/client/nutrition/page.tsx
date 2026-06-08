@@ -370,7 +370,6 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       style={{
         background: isTrainingDay ? NUTRITION_UI_COLORS.trainingDayBg : NUTRITION_UI_COLORS.restDayBg,
         color: isTrainingDay ? NUTRITION_UI_COLORS.trainingDay : NUTRITION_UI_COLORS.restDay,
-        border: `1px solid ${isTrainingDay ? 'rgba(34,197,94,0.45)' : 'rgba(163,163,163,0.35)'}`,
       }}
     >
       {dayTypeLabel}

@@ -35,21 +35,64 @@ export function useDockBottom(): DockBottomItem[] {
   if (pathname.includes("/coach/clients/") && pathname.includes("/data")) {
     const clientId = pathname.split("/coach/clients/")[1]?.split("/")[0];
     return [
-      { id: "metriques", label: "Métriques", href: `/coach/clients/${clientId}/data/metriques`, icon: BarChart2 },
-      { id: "bilans", label: "Bilans", href: `/coach/clients/${clientId}/data/bilans`, icon: ClipboardList },
-      { id: "performances", label: "Performances", href: `/coach/clients/${clientId}/data/performances`, icon: TrendingUp },
-      { id: "morphopro", label: "MorphoPro", href: `/coach/clients/${clientId}/data/morphopro`, icon: Scan },
+      {
+        id: "metriques",
+        label: "Métriques",
+        href: `/coach/clients/${clientId}/data/metriques`,
+        icon: BarChart2,
+      },
+      {
+        id: "bilans",
+        label: "Bilans",
+        href: `/coach/clients/${clientId}/data/bilans`,
+        icon: ClipboardList,
+      },
+      {
+        id: "performances",
+        label: "Performances",
+        href: `/coach/clients/${clientId}/data/performances`,
+        icon: TrendingUp,
+      },
+      {
+        id: "morphopro",
+        label: "MorphoPro",
+        href: `/coach/clients/${clientId}/data/morphopro`,
+        icon: Scan,
+      },
     ];
   }
 
   // Lab — client ouvert — Protocoles
-  if (pathname.includes("/coach/clients/") && pathname.includes("/protocoles")) {
+  if (
+    pathname.includes("/coach/clients/") &&
+    pathname.includes("/protocoles")
+  ) {
     const clientId = pathname.split("/coach/clients/")[1]?.split("/")[0];
     return [
-      { id: "nutrition", label: "Nutrition", href: `/coach/clients/${clientId}/protocoles/nutrition`, icon: Utensils },
-      { id: "entrainement", label: "Entraînement", href: `/coach/clients/${clientId}/protocoles/entrainement`, icon: Dumbbell },
-      { id: "cardio", label: "Cardio", href: `/coach/clients/${clientId}/protocoles/cardio`, icon: HeartPulse },
-      { id: "composition", label: "Composition", href: `/coach/clients/${clientId}/protocoles/composition`, icon: BarChart3 },
+      {
+        id: "nutrition",
+        label: "Nutrition",
+        href: `/coach/clients/${clientId}/protocoles/nutrition`,
+        icon: Utensils,
+      },
+      {
+        id: "entrainement",
+        label: "Entraînement",
+        href: `/coach/clients/${clientId}/protocoles/entrainement`,
+        icon: Weight,
+      },
+      {
+        id: "cardio",
+        label: "Cardio",
+        href: `/coach/clients/${clientId}/protocoles/cardio`,
+        icon: HeartPulse,
+      },
+      {
+        id: "composition",
+        label: "Composition",
+        href: `/coach/clients/${clientId}/protocoles/composition`,
+        icon: BarChart3,
+      },
     ];
   }
 
@@ -57,9 +100,24 @@ export function useDockBottom(): DockBottomItem[] {
   if (pathname.match(/^\/coach\/clients\/[^/]+\/(profil)?$/)) {
     const clientId = pathname.split("/coach/clients/")[1]?.split("/")[0];
     return [
-      { id: "profil", label: "Profil", href: `/coach/clients/${clientId}/profil`, icon: UserCircle },
-      { id: "data", label: "Data & Analyse", href: `/coach/clients/${clientId}/data/metriques`, icon: BarChart2 },
-      { id: "protocoles", label: "Protocoles", href: `/coach/clients/${clientId}/protocoles/nutrition`, icon: Layers },
+      {
+        id: "profil",
+        label: "Profil",
+        href: `/coach/clients/${clientId}/profil`,
+        icon: UserCircle,
+      },
+      {
+        id: "data",
+        label: "Data & Analyse",
+        href: `/coach/clients/${clientId}/data/metriques`,
+        icon: BarChart2,
+      },
+      {
+        id: "protocoles",
+        label: "Protocoles",
+        href: `/coach/clients/${clientId}/protocoles/nutrition`,
+        icon: Layers,
+      },
     ];
   }
 
@@ -90,26 +148,69 @@ export function useDockBottom(): DockBottomItem[] {
     pathname.startsWith("/coach/organisation")
   ) {
     return [
-      { id: "comptabilite", label: "Comptabilité", href: "/coach/comptabilite", icon: Euro },
-      { id: "formules", label: "Formules", href: "/coach/formules", icon: CreditCard },
-      { id: "organisation", label: "Organisation", href: "/coach/organisation", icon: Activity },
+      {
+        id: "comptabilite",
+        label: "Comptabilité",
+        href: "/coach/comptabilite",
+        icon: Euro,
+      },
+      {
+        id: "formules",
+        label: "Formules",
+        href: "/coach/formules",
+        icon: CreditCard,
+      },
+      {
+        id: "organisation",
+        label: "Organisation",
+        href: "/coach/organisation",
+        icon: Activity,
+      },
     ];
   }
 
   // Templates
-  if (pathname.startsWith("/coach/programs") || pathname.startsWith("/coach/assessments")) {
+  if (
+    pathname.startsWith("/coach/programs") ||
+    pathname.startsWith("/coach/assessments")
+  ) {
     return [
-      { id: "programmes", label: "Programmes", href: "/coach/programs/templates", icon: Dumbbell },
-      { id: "bilans", label: "Bilans", href: "/coach/assessments", icon: ClipboardCheck },
+      {
+        id: "programmes",
+        label: "Programmes",
+        href: "/coach/programs/templates",
+        icon: Dumbbell,
+      },
+      {
+        id: "bilans",
+        label: "Bilans",
+        href: "/coach/assessments",
+        icon: ClipboardCheck,
+      },
     ];
   }
 
   // Mon compte
   if (pathname.startsWith("/coach/settings")) {
     return [
-      { id: "profil", label: "Profil", href: "/coach/settings", icon: UserCircle },
-      { id: "preferences", label: "Préférences", href: "/coach/settings#preferences", icon: Settings },
-      { id: "notifications", label: "Notifications", href: "/coach/settings#notifications", icon: Bell },
+      {
+        id: "profil",
+        label: "Profil",
+        href: "/coach/settings",
+        icon: UserCircle,
+      },
+      {
+        id: "preferences",
+        label: "Préférences",
+        href: "/coach/settings#preferences",
+        icon: Settings,
+      },
+      {
+        id: "notifications",
+        label: "Notifications",
+        href: "/coach/settings#notifications",
+        icon: Bell,
+      },
     ];
   }
 

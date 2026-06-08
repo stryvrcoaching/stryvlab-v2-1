@@ -97,6 +97,84 @@ export interface MorphoAnalysis {
   error_message?: string | null
 }
 
+export type Confidence = 'high' | 'medium' | 'low'
+
+export type PosturalSyndrome = {
+  name: 'upper_crossed' | 'lower_crossed' | 'layered' | 'none'
+  present: boolean
+  severity: 'mild' | 'moderate' | 'marked'
+  confidence?: Confidence
+}
+
+export type PatternVerdict = {
+  verdict: 'favorable' | 'neutral' | 'limited' | 'contraindicated'
+  confidence?: Confidence
+  note?: string
+}
+
+export type BiomechMovementPattern =
+  | 'horizontal_push'
+  | 'horizontal_pull'
+  | 'vertical_push'
+  | 'vertical_pull'
+  | 'squat'
+  | 'hinge'
+  | 'lunge'
+  | 'carry'
+  | 'rotation'
+  | 'anti_rotation'
+  | 'core_anti_flex'
+  | 'unilateral_push'
+  | 'unilateral_pull'
+
+export type SegmentEstimate = {
+  cm: number | null
+  confidence?: Confidence
+}
+
+export type BiomechSegments = Record<string, SegmentEstimate | number | null> & {
+  arm_l: SegmentEstimate
+  arm_r: SegmentEstimate
+  femur_l: SegmentEstimate
+  femur_r: SegmentEstimate
+  tibia_l: SegmentEstimate
+  tibia_r: SegmentEstimate
+  torso: SegmentEstimate
+  trunk_to_femur_ratio?: number | null
+  arm_to_torso_ratio?: number | null
+}
+
+export type BiomechFrame = {
+  movement_patterns?: Partial<Record<BiomechMovementPattern, PatternVerdict>>
+}
+
+export type MorphoAnalysisResultV2 = MorphoAnalysisResult & {
+  meta: {
+    analyzed_at: string
+    overall_confidence?: Confidence
+  }
+  biomech: {
+    segments: BiomechSegments
+    postural_syndromes: PosturalSyndrome[]
+    movement_patterns?: Partial<Record<BiomechMovementPattern, PatternVerdict>>
+  }
+  asymmetries: Record<string, number | null>
+}
+
+export type MorphoAnalysisSummary = MorphoAnalysisResult | MorphoAnalysisResultV2 | null
+
+export function isMorphoV2(value: unknown): value is MorphoAnalysisResultV2 {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  const meta = candidate.meta as Record<string, unknown> | undefined
+  const biomech = candidate.biomech as Record<string, unknown> | undefined
+  return Boolean(
+    meta?.analyzed_at &&
+    biomech?.segments &&
+    Array.isArray(biomech?.postural_syndromes)
+  )
+}
+
 export const POSITION_LABELS: Record<MorphoPhotoPosition, string> = {
   front: 'Face',
   back: 'Dos',

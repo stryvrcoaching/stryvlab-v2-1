@@ -239,7 +239,12 @@ const FIELDS: FieldDef[] = [
 ];
 
 const FIELD_MAP = Object.fromEntries(FIELDS.map((f) => [f.key, f]));
-const KPI_FIELDS = ["weight_kg", "body_fat_pct", "muscle_mass_kg", "muscle_mass_pct"];
+const KPI_FIELDS = [
+  "weight_kg",
+  "body_fat_pct",
+  "muscle_mass_kg",
+  "muscle_mass_pct",
+];
 const NEG_GOOD_FIELDS = [
   "body_fat_pct",
   "fat_mass_kg",
@@ -259,39 +264,39 @@ const NEG_GOOD_FIELDS = [
 // Famille bien-être  : indigo/jaune/rouge clair
 const METRIC_COLORS: Record<string, string> = {
   // ── Poids ──────────────────────────────────────────────────────────────────
-  weight_kg:           "#9ca3af", // gris neutre — poids total (référence)
+  weight_kg: "#9ca3af", // gris neutre — poids total (référence)
 
   // ── Graisse (famille orange→rouge) ────────────────────────────────────────
-  body_fat_pct:        "#f97316", // orange vif — % masse grasse
-  fat_mass_kg:         "#fb923c", // orange moyen — masse grasse kg
-  visceral_fat_level:  "#ef4444", // rouge — graisse viscérale (risque élevé)
+  body_fat_pct: "#f97316", // orange vif — % masse grasse
+  fat_mass_kg: "#fb923c", // orange moyen — masse grasse kg
+  visceral_fat_level: "#ef4444", // rouge — graisse viscérale (risque élevé)
 
   // ── Muscle (famille vert, 3 teintes distinctes) ────────────────────────────
-  muscle_mass_kg:      "#1f8a65", // vert STRYV foncé — masse musculaire kg (valeur absolue)
-  muscle_mass_pct:     "#34d399", // vert émeraude — % musculaire total
+  muscle_mass_kg: "#1f8a65", // vert STRYV foncé — masse musculaire kg (valeur absolue)
+  muscle_mass_pct: "#34d399", // vert émeraude — % musculaire total
   skeletal_muscle_pct: "#86efac", // vert clair pastel — % squelettique (sous-ensemble)
 
   // ── Structure corporelle (famille teal/bleu) ──────────────────────────────
-  lean_mass_kg:        "#2dd4bf", // teal — masse maigre (distinct du vert muscle)
-  body_water_pct:      "#38bdf8", // bleu ciel — hydratation cellulaire
-  bone_mass_kg:        "#a78bfa", // violet — masse osseuse
+  lean_mass_kg: "#2dd4bf", // teal — masse maigre (distinct du vert muscle)
+  body_water_pct: "#38bdf8", // bleu ciel — hydratation cellulaire
+  bone_mass_kg: "#a78bfa", // violet — masse osseuse
 
   // ── Mensurations tronc (famille amber/rose) ────────────────────────────────
-  waist_cm:            "#fbbf24", // amber — tour de taille (risque central)
-  hips_cm:             "#f472b6", // rose — hanches
-  waist_hip_ratio:     "#fb7185", // rose-rouge — ratio taille/hanches
+  waist_cm: "#fbbf24", // amber — tour de taille (risque central)
+  hips_cm: "#f472b6", // rose — hanches
+  waist_hip_ratio: "#fb7185", // rose-rouge — ratio taille/hanches
 
   // ── Mensurations membres (spectre froid distinct) ─────────────────────────
-  chest_cm:            "#c084fc", // violet clair — poitrine
-  arm_cm:              "#60a5fa", // bleu moyen — bras
-  thigh_cm:            "#7dd3fc", // bleu clair — cuisse
-  calf_cm:             "#67e8f9", // cyan — mollet
-  neck_cm:             "#a3e635", // lime — cou (Navy)
+  chest_cm: "#c084fc", // violet clair — poitrine
+  arm_cm: "#60a5fa", // bleu moyen — bras
+  thigh_cm: "#7dd3fc", // bleu clair — cuisse
+  calf_cm: "#67e8f9", // cyan — mollet
+  neck_cm: "#a3e635", // lime — cou (Navy)
 
   // ── Bien-être ─────────────────────────────────────────────────────────────
-  sleep_duration_h:    "#818cf8", // indigo — sommeil
-  energy_level:        "#facc15", // jaune — énergie subjective
-  stress_level:        "#f87171", // rouge clair — stress perçu
+  sleep_duration_h: "#818cf8", // indigo — sommeil
+  energy_level: "#facc15", // jaune — énergie subjective
+  stress_level: "#f87171", // rouge clair — stress perçu
 };
 
 function getMetricColor(key: string): string {
@@ -307,12 +312,7 @@ const OVERLAY_GROUPS = [
     desc: "Poids, masse grasse et masse musculaire en kg — trajectoires de recomposition",
     interpretation:
       "Vue centrale du coach. Toutes les courbes sont normalisées à 0 % au point de départ — chaque série montre sa variation relative, indépendamment de son unité. Le signal clé : fat_mass ↓ + muscle_mass ↑ simultanément, même si le poids total stagne. C'est la signature d'une recomposition réussie. lean_mass (= poids − graisse) est un indicateur de rétention globale : il monte si le client gagne du muscle ou de l'eau, et descend si le déficit est trop agressif. Seuil de détection plateau : ±0.5 % sur 4 bilans consécutifs (Schoenfeld 2010). Minimum 3 points pour interpréter une tendance.",
-    metrics: [
-      "weight_kg",
-      "fat_mass_kg",
-      "lean_mass_kg",
-      "muscle_mass_kg",
-    ],
+    metrics: ["weight_kg", "fat_mass_kg", "lean_mass_kg", "muscle_mass_kg"],
   },
   {
     key: "body_ratios",
@@ -320,7 +320,12 @@ const OVERLAY_GROUPS = [
     desc: "% masse grasse, % musculaire total, % squelettique, % hydratation",
     interpretation:
       "Ces ratios sont mécaniquement interdépendants : une baisse du % masse grasse fait monter le % musculaire même sans vrai gain. Croiser toujours avec 'Recomposition' (valeurs absolues) pour distinguer un vrai gain d'un effet de dilution. muscle_mass_pct et skeletal_muscle_pct évoluent souvent de concert — un écart croissant entre les deux peut signaler une adaptation du tissu conjonctif ou une variation de la méthode de mesure. body_water_pct : une chute soudaine indique déshydratation, pas perte de graisse.",
-    metrics: ["body_fat_pct", "muscle_mass_pct", "skeletal_muscle_pct", "body_water_pct"],
+    metrics: [
+      "body_fat_pct",
+      "muscle_mass_pct",
+      "skeletal_muscle_pct",
+      "body_water_pct",
+    ],
   },
   {
     key: "metabolic_risk",
@@ -610,6 +615,44 @@ function formatDateInput(d: string) {
 function getDelta(series: { date: string; value: number }[]) {
   if (series.length < 2) return null;
   return series[series.length - 1].value - series[0].value;
+}
+
+function mergeBodyDataSeries(
+  current: MetricSeries,
+  bodyData: any,
+): MetricSeries {
+  const next = { ...current };
+  if (!bodyData) return next;
+
+  if (Array.isArray(bodyData.weightSeries)) {
+    next.weight_kg = bodyData.weightSeries;
+  }
+  if (Array.isArray(bodyData.bodyFatSeries)) {
+    next.body_fat_pct = bodyData.bodyFatSeries;
+  }
+  if (Array.isArray(bodyData.leanMassSeries)) {
+    next.lean_mass_kg = bodyData.leanMassSeries;
+  }
+
+  const checkins = bodyData.checkinSeries;
+  if (checkins && typeof checkins === "object") {
+    if (Array.isArray(checkins.weight_kg)) {
+      next.weight_kg = checkins.weight_kg;
+    }
+    if (Array.isArray(checkins.sleep_duration_h)) {
+      next.sleep_duration_h = checkins.sleep_duration_h;
+    } else if (Array.isArray(checkins.sleep_hours)) {
+      next.sleep_duration_h = checkins.sleep_hours;
+    }
+    if (Array.isArray(checkins.energy_level)) {
+      next.energy_level = checkins.energy_level;
+    }
+    if (Array.isArray(checkins.stress_level)) {
+      next.stress_level = checkins.stress_level;
+    }
+  }
+
+  return next;
 }
 
 function fmtVal(v: number, unit: string) {
@@ -1448,8 +1491,10 @@ function AnnotationsLayer({
         return (
           <g key={phase.id}>
             <line
-              x1={px} y1={chartTop}
-              x2={px} y2={chartTop + chartHeight}
+              x1={px}
+              y1={chartTop}
+              x2={px}
+              y2={chartTop + chartHeight}
               stroke={c.text}
               strokeOpacity={phase.date_end ? 0.5 : 0.35}
               strokeWidth={1.5}
@@ -1471,7 +1516,9 @@ function AnnotationsLayer({
       {annotations.map((ann, annIdx) => {
         const px = xScale(ann.event_date as never);
         if (typeof px !== "number" || isNaN(px)) return null;
-        const stackIndex = annotations.slice(0, annIdx).filter((a) => a.event_date === ann.event_date).length;
+        const stackIndex = annotations
+          .slice(0, annIdx)
+          .filter((a) => a.event_date === ann.event_date).length;
         const emoji = ANNOTATION_ICONS[ann.event_type] ?? "📌";
         const yOffset = stackIndex * 26;
         const cy = chartTop + 14 + yOffset;
@@ -1479,28 +1526,46 @@ function AnnotationsLayer({
           <g
             key={ann.id}
             onMouseEnter={(e) => {
-              const rect = (e.currentTarget as SVGGElement).getBoundingClientRect();
+              const rect = (
+                e.currentTarget as SVGGElement
+              ).getBoundingClientRect();
               onHover(ann, rect.left + rect.width / 2, rect.top);
             }}
             onMouseLeave={onLeave}
-            onClick={(e) => { e.stopPropagation(); onClick?.(ann.id); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.(ann.id);
+            }}
             style={{ cursor: "pointer" }}
           >
             <line
-              x1={px} y1={chartTop}
-              x2={px} y2={chartTop + chartHeight}
+              x1={px}
+              y1={chartTop}
+              x2={px}
+              y2={chartTop + chartHeight}
               stroke="rgba(255,255,255,0.20)"
               strokeWidth={1}
               strokeDasharray="2 3"
             />
             <circle cx={px} cy={cy} r={16} fill="transparent" />
-            <circle cx={px} cy={cy} r={11} fill="rgba(18,18,18,0.92)" stroke="rgba(255,255,255,0.18)" strokeWidth={0.5} />
+            <circle
+              cx={px}
+              cy={cy}
+              r={11}
+              fill="rgba(18,18,18,0.92)"
+              stroke="rgba(255,255,255,0.18)"
+              strokeWidth={0.5}
+            />
             <foreignObject
               x={px - 11}
               y={cy - 11}
               width={22}
               height={22}
-              style={{ pointerEvents: "none", userSelect: "none", overflow: "visible" }}
+              style={{
+                pointerEvents: "none",
+                userSelect: "none",
+                overflow: "visible",
+              }}
             >
               <div
                 style={{
@@ -1567,7 +1632,14 @@ function AnnotationLabelContent({
       style={{ cursor: "pointer" }}
     >
       <circle cx={cx} cy={cy} r={16} fill="transparent" />
-      <circle cx={cx} cy={cy} r={11} fill="rgba(20,20,20,0.90)" stroke="rgba(255,255,255,0.18)" strokeWidth={0.5} />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={11}
+        fill="rgba(20,20,20,0.90)"
+        stroke="rgba(255,255,255,0.18)"
+        strokeWidth={0.5}
+      />
       <text
         x={cx}
         y={cy + 5}
@@ -1744,8 +1816,14 @@ function MultiSeriesChart({
       });
       return row;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dates.join(","), selectedMetrics.join(","), baselineValues, annotations, phases]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    dates.join(","),
+    selectedMetrics.join(","),
+    baselineValues,
+    annotations,
+    phases,
+  ]);
 
   const deltas = useMemo(() => {
     const d: Record<string, number | null> = {};
@@ -1809,7 +1887,10 @@ function MultiSeriesChart({
     ].filter((d) => !existingDates.has(d));
     const combined = [
       ...dataPoints,
-      ...extraDates.map((date) => ({ date, value: undefined as unknown as number })),
+      ...extraDates.map((date) => ({
+        date,
+        value: undefined as unknown as number,
+      })),
     ].sort((a, b) => a.date.localeCompare(b.date));
 
     return combined;
@@ -1877,7 +1958,12 @@ function MultiSeriesChart({
       date_end: dateEnd ?? "",
       notes: "",
     });
-    setCtxAnnForm({ label: "", event_type: "note", event_date: dateStart, body: "" });
+    setCtxAnnForm({
+      label: "",
+      event_type: "note",
+      event_date: dateStart,
+      body: "",
+    });
   }
 
   function closeContextMenu() {
@@ -2014,7 +2100,10 @@ function MultiSeriesChart({
           closeContextMenu();
         } else {
           const err = await res.json().catch(() => ({}));
-          const msg = typeof err?.error === "string" ? err.error : "Erreur lors de la modification.";
+          const msg =
+            typeof err?.error === "string"
+              ? err.error
+              : "Erreur lors de la modification.";
           setAnnotationError(msg);
         }
       } else {
@@ -2331,385 +2420,405 @@ function MultiSeriesChart({
           className="relative"
           style={{ height: chartHeight }}
         >
-        {/* ── Chart empty state ── */}
-        {visibleSeries.size > 0 && merged.length === 0 && !useAbsoluteAxis && (
-          <div className="mx-5 mt-5 mb-5 rounded-xl bg-white/[0.03] px-5 py-6 text-center">
-            <p className="text-[12px] font-semibold text-white/40 mb-1">
-              Aucune donnée pour ce groupe
+          {/* ── Chart empty state ── */}
+          {visibleSeries.size > 0 &&
+            merged.length === 0 &&
+            !useAbsoluteAxis && (
+              <div className="mx-5 mt-5 mb-5 rounded-xl bg-white/[0.03] px-5 py-6 text-center">
+                <p className="text-[12px] font-semibold text-white/40 mb-1">
+                  Aucune donnée pour ce groupe
+                </p>
+                <p className="text-[11px] text-white/25">
+                  Ces métriques n&apos;ont pas encore été saisies. Importez un
+                  CSV ou ajoutez une mesure.
+                </p>
+              </div>
+            )}
+
+          <div className="absolute inset-0 px-1 pt-1 pb-8">
+            <ChartContainer
+              config={chartConfig}
+              className="w-full [&_svg]:overflow-visible"
+              style={{ height: "100%" }}
+            >
+              {useAbsoluteAxis ? (
+                <LineChart
+                  data={absoluteData}
+                  margin={{ top: 8, right: 32, bottom: 4, left: 4 }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onMouseDown={(payload: any, e: any) => {
+                    const date = getDateFromChartEvent(payload);
+                    if (date)
+                      setDragState({ startDate: date, currentDate: date });
+                    void e;
+                  }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onMouseMove={(payload: any) => {
+                    if (!dragState) return;
+                    const date = getDateFromChartEvent(payload);
+                    if (date && date !== dragState.currentDate)
+                      setDragState((d) =>
+                        d ? { ...d, currentDate: date } : null,
+                      );
+                  }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onMouseUp={(payload: any, e: any) => {
+                    if (annotationClickedRef.current) {
+                      annotationClickedRef.current = false;
+                      setDragState(null);
+                      return;
+                    }
+                    if (!dragState) return;
+                    const date =
+                      getDateFromChartEvent(payload) ?? dragState.startDate;
+                    const [d1, d2] = [dragState.startDate, date].sort();
+                    setDragState(null);
+                    openContextMenu(
+                      e as React.MouseEvent,
+                      d1,
+                      d1 === d2 ? null : d2,
+                    );
+                  }}
+                  style={{ cursor: "crosshair" }}
+                >
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="rgba(255,255,255,0.06)"
+                  />
+                  {activeNormZones?.map((z) => (
+                    <ReferenceLine
+                      key={`nmin-${z.label}`}
+                      y={z.min}
+                      stroke={z.color.replace(/[\d.]+\)$/, "0.35)")}
+                      strokeDasharray="3 3"
+                      strokeWidth={1}
+                    />
+                  ))}
+                  {activeNormZones?.map((z) => (
+                    <ReferenceLine
+                      key={`nmax-${z.label}`}
+                      y={z.max}
+                      stroke={z.color.replace(/[\d.]+\)$/, "0.35)")}
+                      strokeDasharray="3 3"
+                      strokeWidth={1}
+                    />
+                  ))}
+                  {dragState &&
+                    dragState.currentDate !== dragState.startDate && (
+                      <ReferenceLine
+                        x={dragState.currentDate}
+                        stroke="rgba(255,255,255,0.40)"
+                        strokeWidth={1}
+                        strokeDasharray="4 3"
+                      />
+                    )}
+                  <XAxis
+                    dataKey="date"
+                    tick={{
+                      fontSize: 10,
+                      fill: "rgba(255,255,255,0.30)",
+                      fontWeight: 600,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickCount={6}
+                    domain={
+                      lastDataDate
+                        ? [absoluteData[0]?.date, lastDataDate]
+                        : undefined
+                    }
+                    tickFormatter={(d) =>
+                      new Date(d).toLocaleDateString("fr-FR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
+                    }
+                  />
+                  <YAxis
+                    tick={{
+                      fontSize: 10,
+                      fill: "rgba(255,255,255,0.30)",
+                      fontWeight: 600,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={42}
+                    domain={absDomain}
+                    tickFormatter={(v) =>
+                      `${v}${FIELD_MAP[singleVisibleMetric!]?.unit ? " " + FIELD_MAP[singleVisibleMetric!]!.unit : ""}`
+                    }
+                  />
+                  <ChartTooltip
+                    content={
+                      <CustomTooltip
+                        unit={FIELD_MAP[singleVisibleMetric!]?.unit}
+                        fieldLabel={FIELD_MAP[singleVisibleMetric!]?.label}
+                        accentColor={getMetricColor(singleVisibleMetric!)}
+                      />
+                    }
+                    cursor={{
+                      stroke: "rgba(255,255,255,0.15)",
+                      strokeWidth: 1,
+                      strokeDasharray: "4 3",
+                    }}
+                  />
+                  <AnnotationsLayer
+                    annotations={annotations}
+                    phases={phases}
+                    onHover={(a, sx, sy) =>
+                      setHoveredAnnotation({ ann: a, screenX: sx, screenY: sy })
+                    }
+                    onLeave={() => setHoveredAnnotation(null)}
+                    onClick={(id) => {
+                      annotationClickedRef.current = true;
+                      onAnnotationClick?.(id);
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke={getMetricColor(singleVisibleMetric!)}
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                    activeDot={{ r: 4, style: { cursor: "pointer" } }}
+                    isAnimationActive
+                    animationDuration={500}
+                  />
+                </LineChart>
+              ) : (
+                <LineChart
+                  data={merged}
+                  margin={{ top: 8, right: 32, bottom: 4, left: 4 }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onMouseDown={(payload: any, e: any) => {
+                    const date = getDateFromChartEvent(payload);
+                    if (date)
+                      setDragState({ startDate: date, currentDate: date });
+                    void e;
+                  }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onMouseMove={(payload: any) => {
+                    if (!dragState) return;
+                    const date = getDateFromChartEvent(payload);
+                    if (date && date !== dragState.currentDate)
+                      setDragState((d) =>
+                        d ? { ...d, currentDate: date } : null,
+                      );
+                  }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onMouseUp={(payload: any, e: any) => {
+                    if (annotationClickedRef.current) {
+                      annotationClickedRef.current = false;
+                      setDragState(null);
+                      return;
+                    }
+                    if (!dragState) return;
+                    const date =
+                      getDateFromChartEvent(payload) ?? dragState.startDate;
+                    const [d1, d2] = [dragState.startDate, date].sort();
+                    setDragState(null);
+                    openContextMenu(
+                      e as React.MouseEvent,
+                      d1,
+                      d1 === d2 ? null : d2,
+                    );
+                  }}
+                  style={{ cursor: "crosshair" }}
+                >
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="rgba(255,255,255,0.06)"
+                  />
+                  <ReferenceLine
+                    y={0}
+                    stroke="rgba(255,255,255,0.20)"
+                    strokeWidth={1}
+                  />
+                  {dragState &&
+                    dragState.currentDate !== dragState.startDate && (
+                      <ReferenceLine
+                        x={dragState.currentDate}
+                        stroke="rgba(255,255,255,0.40)"
+                        strokeWidth={1}
+                        strokeDasharray="4 3"
+                      />
+                    )}
+                  <XAxis
+                    dataKey="date"
+                    tick={{
+                      fontSize: 10,
+                      fill: "rgba(255,255,255,0.30)",
+                      fontWeight: 600,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickCount={6}
+                    domain={lastDataDate ? [dates[0], lastDataDate] : undefined}
+                    tickFormatter={(d) =>
+                      new Date(d).toLocaleDateString("fr-FR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
+                    }
+                  />
+                  <YAxis
+                    tick={{
+                      fontSize: 10,
+                      fill: "rgba(255,255,255,0.30)",
+                      fontWeight: 600,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={40}
+                    domain={pctDomain}
+                    tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
+                  />
+                  <ChartTooltip
+                    content={<MultiTooltip />}
+                    cursor={{
+                      stroke: "rgba(255,255,255,0.15)",
+                      strokeWidth: 1,
+                      strokeDasharray: "4 3",
+                    }}
+                  />
+                  <AnnotationsLayer
+                    annotations={annotations}
+                    phases={phases}
+                    onHover={(a, sx, sy) =>
+                      setHoveredAnnotation({ ann: a, screenX: sx, screenY: sy })
+                    }
+                    onLeave={() => setHoveredAnnotation(null)}
+                    onClick={(id) => {
+                      annotationClickedRef.current = true;
+                      onAnnotationClick?.(id);
+                    }}
+                  />
+                  {selectedMetrics.map((k) => {
+                    if (!visibleSeries.has(k)) return null;
+                    const color = getMetricColor(k);
+                    const metricPlateaus = plateausByMetric[k] ?? [];
+                    const plateauDateSet = new Set(
+                      metricPlateaus.flatMap((p) => {
+                        const start = dates.indexOf(p.startDate);
+                        const end = dates.indexOf(p.endDate);
+                        return dates.slice(Math.max(0, start), end + 1);
+                      }),
+                    );
+                    const isFocused =
+                      focusedMetric === null || focusedMetric === k;
+                    return (
+                      <Line
+                        key={k}
+                        type="monotone"
+                        dataKey={`__pct_${k}`}
+                        stroke={color}
+                        strokeWidth={
+                          isFocused ? (focusedMetric === k ? 3 : 2) : 2
+                        }
+                        strokeOpacity={isFocused ? 1 : 0.12}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        dot={(dotProps: any) => {
+                          const date = dates[dotProps.index];
+                          if (!plateauDateSet.has(date))
+                            return <g key={dotProps.index} />;
+                          return (
+                            <circle
+                              key={dotProps.index}
+                              cx={dotProps.cx}
+                              cy={dotProps.cy}
+                              r={2.5}
+                              fill="rgba(251,191,36,0.9)"
+                              stroke="none"
+                            />
+                          );
+                        }}
+                        connectNulls
+                        activeDot={{ r: 4, style: { cursor: "pointer" } }}
+                        isAnimationActive
+                        animationDuration={500}
+                      />
+                    );
+                  })}
+                </LineChart>
+              )}
+            </ChartContainer>
+          </div>
+          {/* absolute inset chart */}
+
+          {/* Footer dates — ancré en bas du bloc */}
+          <div className="absolute bottom-0 left-0 right-0 px-5 pb-2 pt-1 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[9px] text-white/20 font-medium">
+              {(
+                useAbsoluteAxis
+                  ? absoluteData[0]?.date
+                  : (merged[0]?.date as string)
+              )
+                ? new Date(
+                    useAbsoluteAxis
+                      ? absoluteData[0]?.date
+                      : (merged[0]?.date as string),
+                  ).toLocaleDateString("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "2-digit",
+                  })
+                : ""}
             </p>
-            <p className="text-[11px] text-white/25">
-              Ces métriques n&apos;ont pas encore été saisies. Importez un CSV
-              ou ajoutez une mesure.
+            <div className="flex-1 h-px bg-white/[0.08]" />
+            <p className="text-[9px] text-white/20 font-medium">
+              {(
+                useAbsoluteAxis
+                  ? absoluteData[absoluteData.length - 1]?.date
+                  : (merged[merged.length - 1]?.date as string)
+              )
+                ? new Date(
+                    useAbsoluteAxis
+                      ? absoluteData[absoluteData.length - 1]?.date
+                      : (merged[merged.length - 1]?.date as string),
+                  ).toLocaleDateString("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "2-digit",
+                  })
+                : ""}
             </p>
           </div>
-        )}
 
-        <div className="absolute inset-0 px-1 pt-1 pb-8">
+          {/* ── Drag handle — ligne épaisse collée au bord bas du bloc ── */}
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const startY = e.clientY;
+              const startH = chartHeightRef.current;
+              const el = chartDivRef.current;
 
-          <ChartContainer
-            config={chartConfig}
-            className="w-full [&_svg]:overflow-visible"
-            style={{ height: "100%" }}
+              const onMove = (ev: MouseEvent) => {
+                const next = Math.max(
+                  160,
+                  Math.min(700, startH + ev.clientY - startY),
+                );
+                chartHeightRef.current = next;
+                if (el) el.style.height = `${next}px`;
+              };
+              const onUp = () => {
+                setChartHeight(chartHeightRef.current);
+                window.removeEventListener("mousemove", onMove);
+                window.removeEventListener("mouseup", onUp);
+              };
+              window.addEventListener("mousemove", onMove);
+              window.addEventListener("mouseup", onUp);
+            }}
+            className="absolute bottom-0 left-0 right-0 h-[10px] cursor-row-resize group flex items-end"
           >
-            {useAbsoluteAxis ? (
-              <LineChart
-                data={absoluteData}
-                margin={{ top: 8, right: 32, bottom: 4, left: 4 }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onMouseDown={(payload: any, e: any) => {
-                  const date = getDateFromChartEvent(payload);
-                  if (date)
-                    setDragState({ startDate: date, currentDate: date });
-                  void e;
-                }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onMouseMove={(payload: any) => {
-                  if (!dragState) return;
-                  const date = getDateFromChartEvent(payload);
-                  if (date && date !== dragState.currentDate)
-                    setDragState((d) =>
-                      d ? { ...d, currentDate: date } : null,
-                    );
-                }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onMouseUp={(payload: any, e: any) => {
-                  if (annotationClickedRef.current) {
-                    annotationClickedRef.current = false;
-                    setDragState(null);
-                    return;
-                  }
-                  if (!dragState) return;
-                  const date =
-                    getDateFromChartEvent(payload) ?? dragState.startDate;
-                  const [d1, d2] = [dragState.startDate, date].sort();
-                  setDragState(null);
-                  openContextMenu(
-                    e as React.MouseEvent,
-                    d1,
-                    d1 === d2 ? null : d2,
-                  );
-                }}
-                style={{ cursor: "crosshair" }}
-              >
-                <CartesianGrid
-                  vertical={false}
-                  stroke="rgba(255,255,255,0.06)"
-                />
-                {activeNormZones?.map((z) => (
-                  <ReferenceLine
-                    key={`nmin-${z.label}`}
-                    y={z.min}
-                    stroke={z.color.replace(/[\d.]+\)$/, "0.35)")}
-                    strokeDasharray="3 3"
-                    strokeWidth={1}
-                  />
-                ))}
-                {activeNormZones?.map((z) => (
-                  <ReferenceLine
-                    key={`nmax-${z.label}`}
-                    y={z.max}
-                    stroke={z.color.replace(/[\d.]+\)$/, "0.35)")}
-                    strokeDasharray="3 3"
-                    strokeWidth={1}
-                  />
-                ))}
-                {dragState && dragState.currentDate !== dragState.startDate && (
-                  <ReferenceLine
-                    x={dragState.currentDate}
-                    stroke="rgba(255,255,255,0.40)"
-                    strokeWidth={1}
-                    strokeDasharray="4 3"
-                  />
-                )}
-                <XAxis
-                  dataKey="date"
-                  tick={{
-                    fontSize: 10,
-                    fill: "rgba(255,255,255,0.30)",
-                    fontWeight: 600,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickCount={6}
-                  domain={lastDataDate ? [absoluteData[0]?.date, lastDataDate] : undefined}
-                  tickFormatter={(d) =>
-                    new Date(d).toLocaleDateString("fr-FR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })
-                  }
-                />
-                <YAxis
-                  tick={{
-                    fontSize: 10,
-                    fill: "rgba(255,255,255,0.30)",
-                    fontWeight: 600,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={42}
-                  domain={absDomain}
-                  tickFormatter={(v) =>
-                    `${v}${FIELD_MAP[singleVisibleMetric!]?.unit ? " " + FIELD_MAP[singleVisibleMetric!]!.unit : ""}`
-                  }
-                />
-                <ChartTooltip
-                  content={
-                    <CustomTooltip
-                      unit={FIELD_MAP[singleVisibleMetric!]?.unit}
-                      fieldLabel={FIELD_MAP[singleVisibleMetric!]?.label}
-                      accentColor={getMetricColor(singleVisibleMetric!)}
-                    />
-                  }
-                  cursor={{
-                    stroke: "rgba(255,255,255,0.15)",
-                    strokeWidth: 1,
-                    strokeDasharray: "4 3",
-                  }}
-                />
-                <AnnotationsLayer
-                  annotations={annotations}
-                  phases={phases}
-                  onHover={(a, sx, sy) => setHoveredAnnotation({ ann: a, screenX: sx, screenY: sy })}
-                  onLeave={() => setHoveredAnnotation(null)}
-                  onClick={(id) => { annotationClickedRef.current = true; onAnnotationClick?.(id); }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={getMetricColor(singleVisibleMetric!)}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                  activeDot={{ r: 4, style: { cursor: "pointer" } }}
-                  isAnimationActive
-                  animationDuration={500}
-                />
-              </LineChart>
-            ) : (
-              <LineChart
-                data={merged}
-                margin={{ top: 8, right: 32, bottom: 4, left: 4 }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onMouseDown={(payload: any, e: any) => {
-                  const date = getDateFromChartEvent(payload);
-                  if (date)
-                    setDragState({ startDate: date, currentDate: date });
-                  void e;
-                }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onMouseMove={(payload: any) => {
-                  if (!dragState) return;
-                  const date = getDateFromChartEvent(payload);
-                  if (date && date !== dragState.currentDate)
-                    setDragState((d) =>
-                      d ? { ...d, currentDate: date } : null,
-                    );
-                }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onMouseUp={(payload: any, e: any) => {
-                  if (annotationClickedRef.current) {
-                    annotationClickedRef.current = false;
-                    setDragState(null);
-                    return;
-                  }
-                  if (!dragState) return;
-                  const date =
-                    getDateFromChartEvent(payload) ?? dragState.startDate;
-                  const [d1, d2] = [dragState.startDate, date].sort();
-                  setDragState(null);
-                  openContextMenu(
-                    e as React.MouseEvent,
-                    d1,
-                    d1 === d2 ? null : d2,
-                  );
-                }}
-                style={{ cursor: "crosshair" }}
-              >
-                <CartesianGrid
-                  vertical={false}
-                  stroke="rgba(255,255,255,0.06)"
-                />
-                <ReferenceLine
-                  y={0}
-                  stroke="rgba(255,255,255,0.20)"
-                  strokeWidth={1}
-                />
-                {dragState && dragState.currentDate !== dragState.startDate && (
-                  <ReferenceLine
-                    x={dragState.currentDate}
-                    stroke="rgba(255,255,255,0.40)"
-                    strokeWidth={1}
-                    strokeDasharray="4 3"
-                  />
-                )}
-                <XAxis
-                  dataKey="date"
-                  tick={{
-                    fontSize: 10,
-                    fill: "rgba(255,255,255,0.30)",
-                    fontWeight: 600,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickCount={6}
-                  domain={lastDataDate ? [dates[0], lastDataDate] : undefined}
-                  tickFormatter={(d) =>
-                    new Date(d).toLocaleDateString("fr-FR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })
-                  }
-                />
-                <YAxis
-                  tick={{
-                    fontSize: 10,
-                    fill: "rgba(255,255,255,0.30)",
-                    fontWeight: 600,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={40}
-                  domain={pctDomain}
-                  tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
-                />
-                <ChartTooltip
-                  content={<MultiTooltip />}
-                  cursor={{
-                    stroke: "rgba(255,255,255,0.15)",
-                    strokeWidth: 1,
-                    strokeDasharray: "4 3",
-                  }}
-                />
-                <AnnotationsLayer
-                  annotations={annotations}
-                  phases={phases}
-                  onHover={(a, sx, sy) => setHoveredAnnotation({ ann: a, screenX: sx, screenY: sy })}
-                  onLeave={() => setHoveredAnnotation(null)}
-                  onClick={(id) => { annotationClickedRef.current = true; onAnnotationClick?.(id); }}
-                />
-                {selectedMetrics.map((k) => {
-                  if (!visibleSeries.has(k)) return null;
-                  const color = getMetricColor(k);
-                  const metricPlateaus = plateausByMetric[k] ?? [];
-                  const plateauDateSet = new Set(
-                    metricPlateaus.flatMap((p) => {
-                      const start = dates.indexOf(p.startDate);
-                      const end = dates.indexOf(p.endDate);
-                      return dates.slice(Math.max(0, start), end + 1);
-                    }),
-                  );
-                  const isFocused =
-                    focusedMetric === null || focusedMetric === k;
-                  return (
-                    <Line
-                      key={k}
-                      type="monotone"
-                      dataKey={`__pct_${k}`}
-                      stroke={color}
-                      strokeWidth={
-                        isFocused ? (focusedMetric === k ? 3 : 2) : 2
-                      }
-                      strokeOpacity={isFocused ? 1 : 0.12}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      dot={(dotProps: any) => {
-                        const date = dates[dotProps.index];
-                        if (!plateauDateSet.has(date))
-                          return <g key={dotProps.index} />;
-                        return (
-                          <circle
-                            key={dotProps.index}
-                            cx={dotProps.cx}
-                            cy={dotProps.cy}
-                            r={2.5}
-                            fill="rgba(251,191,36,0.9)"
-                            stroke="none"
-                          />
-                        );
-                      }}
-                      connectNulls
-                      activeDot={{ r: 4, style: { cursor: "pointer" } }}
-                      isAnimationActive
-                      animationDuration={500}
-                    />
-                  );
-                })}
-              </LineChart>
-            )}
-          </ChartContainer>
+            <div className="w-full h-[3px] bg-white/[0.08] group-hover:bg-[#1f8a65]/60 group-active:bg-[#1f8a65] transition-colors duration-150" />
+          </div>
         </div>
-        {/* absolute inset chart */}
-
-        {/* Footer dates — ancré en bas du bloc */}
-        <div className="absolute bottom-0 left-0 right-0 px-5 pb-2 pt-1 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[9px] text-white/20 font-medium">
-            {(
-              useAbsoluteAxis
-                ? absoluteData[0]?.date
-                : (merged[0]?.date as string)
-            )
-              ? new Date(
-                  useAbsoluteAxis
-                    ? absoluteData[0]?.date
-                    : (merged[0]?.date as string),
-                ).toLocaleDateString("fr-FR", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "2-digit",
-                })
-              : ""}
-          </p>
-          <div className="flex-1 h-px bg-white/[0.08]" />
-          <p className="text-[9px] text-white/20 font-medium">
-            {(
-              useAbsoluteAxis
-                ? absoluteData[absoluteData.length - 1]?.date
-                : (merged[merged.length - 1]?.date as string)
-            )
-              ? new Date(
-                  useAbsoluteAxis
-                    ? absoluteData[absoluteData.length - 1]?.date
-                    : (merged[merged.length - 1]?.date as string),
-                ).toLocaleDateString("fr-FR", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "2-digit",
-                })
-              : ""}
-          </p>
-        </div>
-
-        {/* ── Drag handle — ligne épaisse collée au bord bas du bloc ── */}
-        <div
-          onMouseDown={(e) => {
-            e.preventDefault();
-            const startY = e.clientY;
-            const startH = chartHeightRef.current;
-            const el = chartDivRef.current;
-
-            const onMove = (ev: MouseEvent) => {
-              const next = Math.max(160, Math.min(700, startH + ev.clientY - startY));
-              chartHeightRef.current = next;
-              if (el) el.style.height = `${next}px`;
-            };
-            const onUp = () => {
-              setChartHeight(chartHeightRef.current);
-              window.removeEventListener("mousemove", onMove);
-              window.removeEventListener("mouseup", onUp);
-            };
-            window.addEventListener("mousemove", onMove);
-            window.addEventListener("mouseup", onUp);
-          }}
-          className="absolute bottom-0 left-0 right-0 h-[10px] cursor-row-resize group flex items-end"
-        >
-          <div className="w-full h-[3px] bg-white/[0.08] group-hover:bg-[#1f8a65]/60 group-active:bg-[#1f8a65] transition-colors duration-150" />
-        </div>
-        </div>{/* end zone graphique */}
+        {/* end zone graphique */}
       </div>
       {/* end Bloc 2: Graphique */}
-
 
       {/* ── Bloc 3 : Légende Δ% + zones normatives ── */}
       {(visibleSeries.size > 0 || (useAbsoluteAxis && activeNormZones)) && (
@@ -2836,7 +2945,10 @@ function MultiSeriesChart({
             className="fixed z-50 w-[290px] rounded-xl bg-[#181818] border border-white/[0.08] shadow-2xl p-3 flex flex-col gap-2"
             style={{
               top: Math.min(contextMenu.y, window.innerHeight - 400),
-              left: Math.min(Math.max(8, contextMenu.x - 145), window.innerWidth - 298),
+              left: Math.min(
+                Math.max(8, contextMenu.x - 145),
+                window.innerWidth - 298,
+              ),
             }}
           >
             {/* Header */}
@@ -2893,20 +3005,24 @@ function MultiSeriesChart({
                     Type
                   </label>
                   <div className="flex flex-wrap gap-1">
-                    {(Object.keys(ANNOTATION_ICONS) as AnnotationType[]).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setCtxAnnForm((p) => ({ ...p, event_type: t }))}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold transition-all ${
-                          ctxAnnForm.event_type === t
-                            ? "bg-[#1f8a65] text-white"
-                            : "bg-white/[0.05] text-white/40 hover:bg-white/[0.09] hover:text-white/70"
-                        }`}
-                      >
-                        <span>{ANNOTATION_ICONS[t]}</span>
-                        <span>{ANNOTATION_LABELS[t]}</span>
-                      </button>
-                    ))}
+                    {(Object.keys(ANNOTATION_ICONS) as AnnotationType[]).map(
+                      (t) => (
+                        <button
+                          key={t}
+                          onClick={() =>
+                            setCtxAnnForm((p) => ({ ...p, event_type: t }))
+                          }
+                          className={`flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold transition-all ${
+                            ctxAnnForm.event_type === t
+                              ? "bg-[#1f8a65] text-white"
+                              : "bg-white/[0.05] text-white/40 hover:bg-white/[0.09] hover:text-white/70"
+                          }`}
+                        >
+                          <span>{ANNOTATION_ICONS[t]}</span>
+                          <span>{ANNOTATION_LABELS[t]}</span>
+                        </button>
+                      ),
+                    )}
                   </div>
                 </div>
 
@@ -2918,13 +3034,19 @@ function MultiSeriesChart({
                   <input
                     autoFocus
                     value={ctxAnnForm.label}
-                    onChange={(e) => setCtxAnnForm((p) => ({ ...p, label: e.target.value }))}
+                    onChange={(e) =>
+                      setCtxAnnForm((p) => ({ ...p, label: e.target.value }))
+                    }
                     placeholder={
-                      ctxAnnForm.event_type === "program_change" ? "ex: Nouveau programme push/pull"
-                      : ctxAnnForm.event_type === "injury" ? "ex: Douleur épaule droite"
-                      : ctxAnnForm.event_type === "nutrition" ? "ex: Ajout créatine"
-                      : ctxAnnForm.event_type === "travel" ? "ex: Vacances Espagne"
-                      : "ex: Observation importante"
+                      ctxAnnForm.event_type === "program_change"
+                        ? "ex: Nouveau programme push/pull"
+                        : ctxAnnForm.event_type === "injury"
+                          ? "ex: Douleur épaule droite"
+                          : ctxAnnForm.event_type === "nutrition"
+                            ? "ex: Ajout créatine"
+                            : ctxAnnForm.event_type === "travel"
+                              ? "ex: Vacances Espagne"
+                              : "ex: Observation importante"
                     }
                     className="w-full px-2.5 py-1.5 bg-[#0a0a0a] rounded-lg text-[11px] text-white outline-none placeholder:text-white/20"
                   />
@@ -2933,11 +3055,16 @@ function MultiSeriesChart({
                 {/* Body — always visible, all types */}
                 <div>
                   <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1">
-                    Détail <span className="text-white/20 font-normal normal-case">(optionnel)</span>
+                    Détail{" "}
+                    <span className="text-white/20 font-normal normal-case">
+                      (optionnel)
+                    </span>
                   </label>
                   <textarea
                     value={ctxAnnForm.body}
-                    onChange={(e) => setCtxAnnForm((p) => ({ ...p, body: e.target.value }))}
+                    onChange={(e) =>
+                      setCtxAnnForm((p) => ({ ...p, body: e.target.value }))
+                    }
                     placeholder="Contexte, protocole, observations…"
                     rows={2}
                     className="w-full px-2.5 py-1.5 bg-[#0a0a0a] rounded-lg text-[11px] text-white outline-none placeholder:text-white/20 resize-none leading-relaxed"
@@ -2952,7 +3079,12 @@ function MultiSeriesChart({
                   <input
                     type="date"
                     value={ctxAnnForm.event_date}
-                    onChange={(e) => setCtxAnnForm((p) => ({ ...p, event_date: e.target.value }))}
+                    onChange={(e) =>
+                      setCtxAnnForm((p) => ({
+                        ...p,
+                        event_date: e.target.value,
+                      }))
+                    }
                     className="w-full px-2.5 py-1.5 bg-[#0a0a0a] rounded-lg text-[11px] text-white outline-none [color-scheme:dark]"
                   />
                 </div>
@@ -2971,10 +3103,18 @@ function MultiSeriesChart({
                   </button>
                   <button
                     onClick={() => handleSaveAnnotation(ctxAnnForm)}
-                    disabled={savingAnnotation || !ctxAnnForm.label || !ctxAnnForm.event_date}
+                    disabled={
+                      savingAnnotation ||
+                      !ctxAnnForm.label ||
+                      !ctxAnnForm.event_date
+                    }
                     className="px-3 py-1.5 rounded-lg bg-[#1f8a65] text-white text-[10px] font-bold disabled:opacity-50 hover:bg-[#217356] transition-colors"
                   >
-                    {savingAnnotation ? "…" : contextMenu?.editingId ? "Modifier" : "Enregistrer"}
+                    {savingAnnotation
+                      ? "…"
+                      : contextMenu?.editingId
+                        ? "Modifier"
+                        : "Enregistrer"}
                   </button>
                 </div>
               </div>
@@ -2990,7 +3130,9 @@ function MultiSeriesChart({
                   <input
                     autoFocus
                     value={ctxPhaseForm.label}
-                    onChange={(e) => setCtxPhaseForm((p) => ({ ...p, label: e.target.value }))}
+                    onChange={(e) =>
+                      setCtxPhaseForm((p) => ({ ...p, label: e.target.value }))
+                    }
                     placeholder="ex: Prise de masse hiver"
                     className="w-full px-2.5 py-1.5 bg-[#0a0a0a] rounded-lg text-[11px] text-white outline-none placeholder:text-white/20"
                   />
@@ -3003,12 +3145,20 @@ function MultiSeriesChart({
                     {(Object.keys(PHASE_COLORS) as PhaseType[]).map((pt) => (
                       <button
                         key={pt}
-                        onClick={() => setCtxPhaseForm((p) => ({ ...p, phase_type: pt }))}
+                        onClick={() =>
+                          setCtxPhaseForm((p) => ({ ...p, phase_type: pt }))
+                        }
                         className="px-2 py-1 rounded-md text-[9px] font-bold transition-all"
                         style={
                           ctxPhaseForm.phase_type === pt
-                            ? { backgroundColor: PHASE_COLORS[pt].bg, color: PHASE_COLORS[pt].text }
-                            : { backgroundColor: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.35)" }
+                            ? {
+                                backgroundColor: PHASE_COLORS[pt].bg,
+                                color: PHASE_COLORS[pt].text,
+                              }
+                            : {
+                                backgroundColor: "rgba(255,255,255,0.04)",
+                                color: "rgba(255,255,255,0.35)",
+                              }
                         }
                       >
                         {PHASE_COLORS[pt].label}
@@ -3024,7 +3174,12 @@ function MultiSeriesChart({
                     <input
                       type="date"
                       value={ctxPhaseForm.date_start}
-                      onChange={(e) => setCtxPhaseForm((p) => ({ ...p, date_start: e.target.value }))}
+                      onChange={(e) =>
+                        setCtxPhaseForm((p) => ({
+                          ...p,
+                          date_start: e.target.value,
+                        }))
+                      }
                       className="w-full px-2 py-1.5 bg-[#0a0a0a] rounded-lg text-[10px] text-white outline-none [color-scheme:dark]"
                     />
                   </div>
@@ -3035,7 +3190,12 @@ function MultiSeriesChart({
                     <input
                       type="date"
                       value={ctxPhaseForm.date_end}
-                      onChange={(e) => setCtxPhaseForm((p) => ({ ...p, date_end: e.target.value }))}
+                      onChange={(e) =>
+                        setCtxPhaseForm((p) => ({
+                          ...p,
+                          date_end: e.target.value,
+                        }))
+                      }
                       className="w-full px-2 py-1.5 bg-[#0a0a0a] rounded-lg text-[10px] text-white outline-none [color-scheme:dark]"
                     />
                   </div>
@@ -3049,10 +3209,18 @@ function MultiSeriesChart({
                   </button>
                   <button
                     onClick={() => handleSavePhase(ctxPhaseForm)}
-                    disabled={savingPhase || !ctxPhaseForm.label || !ctxPhaseForm.date_start}
+                    disabled={
+                      savingPhase ||
+                      !ctxPhaseForm.label ||
+                      !ctxPhaseForm.date_start
+                    }
                     className="px-3 py-1.5 rounded-lg bg-[#1f8a65] text-white text-[10px] font-bold disabled:opacity-50 hover:bg-[#217356] transition-colors"
                   >
-                    {savingPhase ? "…" : contextMenu?.editingId ? "Modifier" : "Enregistrer"}
+                    {savingPhase
+                      ? "…"
+                      : contextMenu?.editingId
+                        ? "Modifier"
+                        : "Enregistrer"}
                   </button>
                 </div>
               </div>
@@ -3069,7 +3237,11 @@ function MultiSeriesChart({
           const nearLeft = hoveredAnnotation.screenX < 140;
           const xShift = nearRight ? "-100%" : nearLeft ? "0%" : "-50%";
           const yShift = nearTop ? "0%" : "-100%";
-          const caretLeft = nearRight ? "calc(100% - 20px)" : nearLeft ? "16px" : "50%";
+          const caretLeft = nearRight
+            ? "calc(100% - 20px)"
+            : nearLeft
+              ? "16px"
+              : "50%";
           return (
             <div
               className="fixed z-[60] pointer-events-none"
@@ -3083,9 +3255,21 @@ function MultiSeriesChart({
             >
               <div className="relative bg-[#0f0f0f] border border-white/[0.10] rounded-xl px-3 py-2.5 w-[220px] shadow-2xl">
                 {nearTop ? (
-                  <div className="absolute -top-[5px] w-2.5 h-2.5 bg-[#0f0f0f] border-l border-t border-white/[0.10] rotate-45" style={{ left: caretLeft, transform: "translateX(-50%) rotate(45deg)" }} />
+                  <div
+                    className="absolute -top-[5px] w-2.5 h-2.5 bg-[#0f0f0f] border-l border-t border-white/[0.10] rotate-45"
+                    style={{
+                      left: caretLeft,
+                      transform: "translateX(-50%) rotate(45deg)",
+                    }}
+                  />
                 ) : (
-                  <div className="absolute -bottom-[5px] w-2.5 h-2.5 bg-[#0f0f0f] border-r border-b border-white/[0.10] rotate-45" style={{ left: caretLeft, transform: "translateX(-50%) rotate(45deg)" }} />
+                  <div
+                    className="absolute -bottom-[5px] w-2.5 h-2.5 bg-[#0f0f0f] border-r border-b border-white/[0.10] rotate-45"
+                    style={{
+                      left: caretLeft,
+                      transform: "translateX(-50%) rotate(45deg)",
+                    }}
+                  />
                 )}
                 <p className="text-[11px] font-semibold text-white leading-snug">
                   {ANNOTATION_ICONS[hoveredAnnotation.ann.event_type]}{" "}
@@ -3113,7 +3297,9 @@ function MultiSeriesChart({
       {isFullscreen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsFullscreen(false); }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsFullscreen(false);
+          }}
         >
           <div className="relative w-full max-w-[95vw] h-[92vh] bg-[#181818] rounded-2xl border-[0.3px] border-white/[0.06] flex flex-col overflow-hidden">
             {/* Header modal */}
@@ -3130,9 +3316,7 @@ function MultiSeriesChart({
               </button>
             </div>
             {/* Contenu scrollable */}
-            <div className="flex-1 overflow-y-auto p-5">
-              {innerContent}
-            </div>
+            <div className="flex-1 overflow-y-auto p-5">{innerContent}</div>
           </div>
         </div>
       )}
@@ -3828,7 +4012,10 @@ function TimeRangeSlider({
               const days = isoDateToDays(e.target.value);
               // timeRangeDays[1] = "Du" (furthest in past = largest days-ago value)
               // Clamp so "Du" never goes more recent than "Au" (timeRangeDays[0])
-              setTimeRangeDays([timeRangeDays[0], Math.max(days, timeRangeDays[0])]);
+              setTimeRangeDays([
+                timeRangeDays[0],
+                Math.max(days, timeRangeDays[0]),
+              ]);
             }}
             className="h-8 w-full rounded-lg bg-[#0a0a0a] px-2.5 text-[11px] font-semibold text-white/75 outline-none border-[0.3px] border-white/[0.08] focus:border-white/[0.18] transition-colors [color-scheme:dark] tabular-nums"
           />
@@ -3846,7 +4033,10 @@ function TimeRangeSlider({
               const days = isoDateToDays(e.target.value);
               // timeRangeDays[0] = "Au" (most recent = smallest days-ago value)
               // Clamp so "Au" never goes further in past than "Du" (timeRangeDays[1])
-              setTimeRangeDays([Math.min(days, timeRangeDays[1]), timeRangeDays[1]]);
+              setTimeRangeDays([
+                Math.min(days, timeRangeDays[1]),
+                timeRangeDays[1],
+              ]);
             }}
             className="h-8 w-full rounded-lg bg-[#0a0a0a] px-2.5 text-[11px] font-semibold text-white/75 outline-none border-[0.3px] border-white/[0.08] focus:border-white/[0.18] transition-colors [color-scheme:dark] tabular-nums"
           />
@@ -3919,11 +4109,19 @@ function NoteModal({
     if (!label || !eventDate) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/clients/${clientId}/annotations/${ann.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, body: body || null, event_type: eventType, event_date: eventDate }),
-      });
+      const res = await fetch(
+        `/api/clients/${clientId}/annotations/${ann.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label,
+            body: body || null,
+            event_type: eventType,
+            event_date: eventDate,
+          }),
+        },
+      );
       if (res.ok) {
         const updated = await res.json();
         onSaved(updated);
@@ -3935,7 +4133,9 @@ function NoteModal({
   }
 
   async function deleteAnn() {
-    await fetch(`/api/clients/${clientId}/annotations/${ann.id}`, { method: "DELETE" });
+    await fetch(`/api/clients/${clientId}/annotations/${ann.id}`, {
+      method: "DELETE",
+    });
     onDeleted(ann.id);
   }
 
@@ -3955,7 +4155,9 @@ function NoteModal({
           /* ── Edit mode ── */
           <>
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06]">
-              <p className="text-[11px] font-bold text-white/50 uppercase tracking-[0.12em]">Modifier l&apos;annotation</p>
+              <p className="text-[11px] font-bold text-white/50 uppercase tracking-[0.12em]">
+                Modifier l&apos;annotation
+              </p>
               <button
                 onClick={onClose}
                 className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/30 hover:text-white/70 hover:bg-white/[0.08] transition-all"
@@ -3967,7 +4169,9 @@ function NoteModal({
             <div className="px-5 py-4 flex flex-col gap-3">
               {/* Type */}
               <div>
-                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">Type</label>
+                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">
+                  Type
+                </label>
                 <div className="flex gap-1.5 flex-wrap">
                   {ANNOTATION_TYPE_OPTIONS.map((opt) => (
                     <button
@@ -3979,7 +4183,8 @@ function NoteModal({
                           : "bg-white/[0.04] text-white/45 hover:bg-white/[0.07] hover:text-white/70"
                       }`}
                     >
-                      <span>{opt.icon}</span>{opt.label}
+                      <span>{opt.icon}</span>
+                      {opt.label}
                     </button>
                   ))}
                 </div>
@@ -3987,7 +4192,9 @@ function NoteModal({
 
               {/* Titre */}
               <div>
-                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">Titre</label>
+                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">
+                  Titre
+                </label>
                 <input
                   autoFocus
                   value={label}
@@ -3999,7 +4206,9 @@ function NoteModal({
 
               {/* Date */}
               <div>
-                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">Date</label>
+                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">
+                  Date
+                </label>
                 <input
                   type="date"
                   value={eventDate}
@@ -4011,7 +4220,10 @@ function NoteModal({
               {/* Détail */}
               <div>
                 <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">
-                  Détail <span className="text-white/20 font-normal normal-case">(optionnel)</span>
+                  Détail{" "}
+                  <span className="text-white/20 font-normal normal-case">
+                    (optionnel)
+                  </span>
                 </label>
                 <textarea
                   value={body}
@@ -4035,7 +4247,11 @@ function NoteModal({
                 disabled={saving || !label || !eventDate}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#1f8a65] text-white text-[11px] font-bold hover:bg-[#217356] disabled:opacity-50 transition-colors"
               >
-                {saving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+                {saving ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={11} />
+                )}
                 Enregistrer
               </button>
             </div>
@@ -4097,7 +4313,9 @@ function NoteModal({
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-red-400 font-medium">Confirmer ?</span>
+                  <span className="text-[11px] text-red-400 font-medium">
+                    Confirmer ?
+                  </span>
                   <button
                     onClick={deleteAnn}
                     className="px-2.5 py-1.5 rounded-lg bg-red-400/10 border border-red-400/25 text-[11px] font-bold text-red-400 hover:bg-red-400/20 transition-colors"
@@ -4142,19 +4360,37 @@ interface PhaseEditModalProps {
   saving: boolean;
 }
 
-function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps) {
+function PhaseEditModal({
+  phase,
+  onClose,
+  onSave,
+  saving,
+}: PhaseEditModalProps) {
   const [label, setLabel] = useState(phase.label);
   const [phaseType, setPhaseType] = useState<PhaseType>(phase.phase_type);
   const [dateStart, setDateStart] = useState(phase.date_start.slice(0, 10));
-  const [dateEnd, setDateEnd] = useState(phase.date_end ? phase.date_end.slice(0, 10) : "");
+  const [dateEnd, setDateEnd] = useState(
+    phase.date_end ? phase.date_end.slice(0, 10) : "",
+  );
   const [notes, setNotes] = useState(phase.notes ?? "");
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-sm bg-[#181818] rounded-2xl p-5 border border-white/[0.06] flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm bg-[#181818] rounded-2xl p-5 border border-white/[0.06] flex flex-col gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
-          <p className="text-[13px] font-semibold text-white">Modifier la phase</p>
-          <button onClick={onClose} className="text-white/40 hover:text-white/70 transition-colors">
+          <p className="text-[13px] font-semibold text-white">
+            Modifier la phase
+          </p>
+          <button
+            onClick={onClose}
+            className="text-white/40 hover:text-white/70 transition-colors"
+          >
             <X size={16} />
           </button>
         </div>
@@ -4168,8 +4404,15 @@ function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps)
               className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all"
               style={
                 phaseType === pt
-                  ? { backgroundColor: PHASE_COLORS[pt].bg, color: PHASE_COLORS[pt].text, outline: `1px solid ${PHASE_COLORS[pt].text}40` }
-                  : { backgroundColor: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.4)" }
+                  ? {
+                      backgroundColor: PHASE_COLORS[pt].bg,
+                      color: PHASE_COLORS[pt].text,
+                      outline: `1px solid ${PHASE_COLORS[pt].text}40`,
+                    }
+                  : {
+                      backgroundColor: "rgba(255,255,255,0.04)",
+                      color: "rgba(255,255,255,0.4)",
+                    }
               }
             >
               {PHASE_COLORS[pt].label}
@@ -4179,7 +4422,9 @@ function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps)
 
         {/* Label */}
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Libellé</label>
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
+            Libellé
+          </label>
           <input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
@@ -4191,7 +4436,9 @@ function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps)
         {/* Dates */}
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Début</label>
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
+              Début
+            </label>
             <input
               type="date"
               value={dateStart}
@@ -4200,7 +4447,9 @@ function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps)
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Fin (opt.)</label>
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
+              Fin (opt.)
+            </label>
             <input
               type="date"
               value={dateEnd}
@@ -4212,7 +4461,9 @@ function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps)
 
         {/* Notes */}
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Notes (opt.)</label>
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
+            Notes (opt.)
+          </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -4231,11 +4482,23 @@ function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps)
             Annuler
           </button>
           <button
-            onClick={() => onSave({ label, phase_type: phaseType, date_start: dateStart, date_end: dateEnd, notes })}
+            onClick={() =>
+              onSave({
+                label,
+                phase_type: phaseType,
+                date_start: dateStart,
+                date_end: dateEnd,
+                notes,
+              })
+            }
             disabled={saving || !dateStart}
             className="flex-1 h-9 rounded-xl bg-[#1f8a65] text-[12px] text-white font-bold hover:bg-[#217356] disabled:opacity-50 transition-colors"
           >
-            {saving ? <Loader2 size={14} className="animate-spin mx-auto" /> : "Enregistrer"}
+            {saving ? (
+              <Loader2 size={14} className="animate-spin mx-auto" />
+            ) : (
+              "Enregistrer"
+            )}
           </button>
         </div>
       </div>
@@ -4243,7 +4506,11 @@ function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps)
   );
 }
 
-export default function MetricsSection({ clientId, clientGender, clientDateOfBirth }: Props) {
+export default function MetricsSection({
+  clientId,
+  clientGender,
+  clientDateOfBirth,
+}: Props) {
   const [rows, setRows] = useState<MetricRow[]>([]);
   const [series, setSeries] = useState<MetricSeries>({});
   const [loading, setLoading] = useState(true);
@@ -4301,17 +4568,30 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
   >(null);
   const annotationRefs = useMemo(() => new Map<string, HTMLDivElement>(), []);
   const [noteModal, setNoteModal] = useState<MetricAnnotation | null>(null);
-  const [phaseDeleteConfirm, setPhaseDeleteConfirm] = useState<string | null>(null);
-  const [phaseEditModal, setPhaseEditModal] = useState<TrainingPhase | null>(null);
+  const [phaseDeleteConfirm, setPhaseDeleteConfirm] = useState<string | null>(
+    null,
+  );
+  const [phaseEditModal, setPhaseEditModal] = useState<TrainingPhase | null>(
+    null,
+  );
   const [phaseEditSaving, setPhaseEditSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/clients/${clientId}/metrics`);
-      const d = await res.json();
-      setRows(d.rows ?? []);
-      setSeries(d.series ?? {});
+      const [metricsResponse, bodyDataResponse] = await Promise.all([
+        fetch(`/api/clients/${clientId}/metrics`)
+          .then((r) => r.json())
+          .catch(() => ({ rows: [], series: {} })),
+        fetch(`/api/coach/clients/${clientId}/body-data`)
+          .then((r) => r.json())
+          .catch(() => null),
+      ]);
+
+      setRows(metricsResponse.rows ?? []);
+      setSeries(
+        mergeBodyDataSeries(metricsResponse.series ?? {}, bodyDataResponse),
+      );
     } finally {
       setLoading(false);
     }
@@ -4402,20 +4682,23 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
   }, [series, finalDateFrom, finalDateTo]);
 
   const filteredAnnotations = useMemo(
-    () => annotations.filter((a) => {
-      if (finalDateFrom && a.event_date < finalDateFrom) return false;
-      if (finalDateTo && a.event_date > finalDateTo) return false;
-      return true;
-    }),
+    () =>
+      annotations.filter((a) => {
+        if (finalDateFrom && a.event_date < finalDateFrom) return false;
+        if (finalDateTo && a.event_date > finalDateTo) return false;
+        return true;
+      }),
     [annotations, finalDateFrom, finalDateTo],
   );
 
   const filteredPhases = useMemo(
-    () => phases.filter((p) => {
-      if (finalDateTo && p.date_start > finalDateTo) return false;
-      if (finalDateFrom && p.date_end && p.date_end < finalDateFrom) return false;
-      return true;
-    }),
+    () =>
+      phases.filter((p) => {
+        if (finalDateTo && p.date_start > finalDateTo) return false;
+        if (finalDateFrom && p.date_end && p.date_end < finalDateFrom)
+          return false;
+        return true;
+      }),
     [phases, finalDateFrom, finalDateTo],
   );
 
@@ -4429,10 +4712,13 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
     let hasHeight = false;
     let latestWithWeight: string | null = null;
     for (const row of rows) {
-      if (row.values['weight_kg'] != null) { hasWeight = true; latestWithWeight = row.submissionId; }
-      if (row.values['height_cm'] != null) hasHeight = true;
+      if (row.values["weight_kg"] != null) {
+        hasWeight = true;
+        latestWithWeight = row.submissionId;
+      }
+      if (row.values["height_cm"] != null) hasHeight = true;
     }
-    return (hasWeight && hasHeight) ? latestWithWeight : null;
+    return hasWeight && hasHeight ? latestWithWeight : null;
   }, [rows]);
 
   const fieldsWithData = FIELDS.filter((f) => (series[f.key]?.length ?? 0) > 0);
@@ -4479,7 +4765,10 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
             onChange={(e) => {
               if (!e.target.value) return;
               const days = isoDateToDays(e.target.value);
-              setTimeRangeDays([timeRangeDays[0], Math.max(days, timeRangeDays[0])]);
+              setTimeRangeDays([
+                timeRangeDays[0],
+                Math.max(days, timeRangeDays[0]),
+              ]);
             }}
             className="h-8 w-full rounded-lg bg-[#0a0a0a] px-2.5 text-[11px] font-semibold text-white/75 outline-none border-[0.3px] border-white/[0.08] focus:border-white/[0.18] transition-colors [color-scheme:dark] tabular-nums"
           />
@@ -4495,7 +4784,10 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
             onChange={(e) => {
               if (!e.target.value) return;
               const days = isoDateToDays(e.target.value);
-              setTimeRangeDays([Math.min(days, timeRangeDays[1]), timeRangeDays[1]]);
+              setTimeRangeDays([
+                Math.min(days, timeRangeDays[1]),
+                timeRangeDays[1],
+              ]);
             }}
             className="h-8 w-full rounded-lg bg-[#0a0a0a] px-2.5 text-[11px] font-semibold text-white/75 outline-none border-[0.3px] border-white/[0.08] focus:border-white/[0.18] transition-colors [color-scheme:dark] tabular-nums"
           />
@@ -4539,8 +4831,7 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
             const isOverlay = key === "overlay";
             const isNorms = key === "norms";
             const disabled =
-              (isOverlay && !canOverlay) ||
-              (isNorms && !normsSubmissionId);
+              (isOverlay && !canOverlay) || (isNorms && !normsSubmissionId);
             const disabledTitle = isOverlay
               ? "Sélectionnez au moins 2 métriques pour activer ce mode"
               : isNorms
@@ -4939,10 +5230,17 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
             {/* Bar / Line toggle */}
             <div
               className="flex items-center gap-0.5 bg-white/[0.05] rounded-lg p-0.5"
-              title={chartKindByCategory[chartCategory] === "bar" ? "Passer en linéaire" : "Passer en barres"}
+              title={
+                chartKindByCategory[chartCategory] === "bar"
+                  ? "Passer en linéaire"
+                  : "Passer en barres"
+              }
             >
               <button
-                onClick={() => chartKindByCategory[chartCategory] !== "bar" && toggleChartKind(chartCategory)}
+                onClick={() =>
+                  chartKindByCategory[chartCategory] !== "bar" &&
+                  toggleChartKind(chartCategory)
+                }
                 className={`flex items-center justify-center w-7 h-7 rounded-md transition-all ${
                   chartKindByCategory[chartCategory] === "bar"
                     ? "bg-[#181818] text-white"
@@ -4952,7 +5250,10 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
                 <BarChart2 size={13} />
               </button>
               <button
-                onClick={() => chartKindByCategory[chartCategory] !== "line" && toggleChartKind(chartCategory)}
+                onClick={() =>
+                  chartKindByCategory[chartCategory] !== "line" &&
+                  toggleChartKind(chartCategory)
+                }
                 className={`flex items-center justify-center w-7 h-7 rounded-md transition-all ${
                   chartKindByCategory[chartCategory] === "line"
                     ? "bg-[#181818] text-white"
@@ -5087,26 +5388,44 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
                                   style={{ backgroundColor: c.bg }}
                                 >
                                   {/* Color dot */}
-                                  <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.text }} />
+                                  <div
+                                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                                    style={{ background: c.text }}
+                                  />
                                   {/* Date */}
-                                  <span className="text-[9px] tabular-nums w-[34px] shrink-0" style={{ color: c.text, opacity: 0.7 }}>
+                                  <span
+                                    className="text-[9px] tabular-nums w-[34px] shrink-0"
+                                    style={{ color: c.text, opacity: 0.7 }}
+                                  >
                                     {dayStart}
                                   </span>
                                   {/* Label */}
-                                  <span className="text-[11px] font-semibold flex-1 min-w-0 truncate" style={{ color: c.text }}>
+                                  <span
+                                    className="text-[11px] font-semibold flex-1 min-w-0 truncate"
+                                    style={{ color: c.text }}
+                                  >
                                     {ph.label}
                                   </span>
                                   {/* Type + end date */}
-                                  <span className="text-[9px] shrink-0" style={{ color: c.text, opacity: 0.55 }}>
-                                    {PHASE_COLORS[ph.phase_type].label}{dayEnd ? ` → ${dayEnd}` : ""}
+                                  <span
+                                    className="text-[9px] shrink-0"
+                                    style={{ color: c.text, opacity: 0.55 }}
+                                  >
+                                    {PHASE_COLORS[ph.phase_type].label}
+                                    {dayEnd ? ` → ${dayEnd}` : ""}
                                   </span>
                                   {/* Actions */}
                                   {phaseDeleteConfirm === ph.id ? (
                                     <div className="flex items-center gap-1 ml-1 shrink-0">
                                       <button
                                         onClick={async () => {
-                                          await fetch(`/api/clients/${clientId}/phases/${ph.id}`, { method: "DELETE" });
-                                          setPhases((prev) => prev.filter((p) => p.id !== ph.id));
+                                          await fetch(
+                                            `/api/clients/${clientId}/phases/${ph.id}`,
+                                            { method: "DELETE" },
+                                          );
+                                          setPhases((prev) =>
+                                            prev.filter((p) => p.id !== ph.id),
+                                          );
                                           setPhaseDeleteConfirm(null);
                                         }}
                                         className="text-[9px] font-bold text-red-400 hover:text-red-300 transition-colors px-1"
@@ -5114,7 +5433,9 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
                                         Oui
                                       </button>
                                       <button
-                                        onClick={() => setPhaseDeleteConfirm(null)}
+                                        onClick={() =>
+                                          setPhaseDeleteConfirm(null)
+                                        }
                                         className="text-[9px] text-white/30 hover:text-white/60 transition-colors px-1"
                                       >
                                         Non
@@ -5123,14 +5444,19 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
                                   ) : (
                                     <div className="flex items-center gap-0.5 ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                       <button
-                                        onClick={(e) => { e.stopPropagation(); setPhaseEditModal(ph); }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setPhaseEditModal(ph);
+                                        }}
                                         className="p-1 rounded text-white/20 hover:text-white/60 transition-colors"
                                         title="Modifier"
                                       >
                                         <Edit2 size={9} />
                                       </button>
                                       <button
-                                        onClick={() => setPhaseDeleteConfirm(ph.id)}
+                                        onClick={() =>
+                                          setPhaseDeleteConfirm(ph.id)
+                                        }
                                         className="p-1 rounded text-white/20 hover:text-red-400 transition-colors"
                                         title="Supprimer"
                                       >
@@ -5174,7 +5500,10 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
                                 </span>
                                 {/* Body dot — has detail */}
                                 {ann.body && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0" title="Contient un détail" />
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0"
+                                    title="Contient un détail"
+                                  />
                                 )}
                                 {/* Arrow */}
                                 <ChevronDown
@@ -5198,7 +5527,10 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
       {viewMode === "norms" && normsSubmissionId && (
         <BioNormsPanel
           clientId={clientId}
-          clientProfile={{ sex: clientGender, date_of_birth: clientDateOfBirth }}
+          clientProfile={{
+            sex: clientGender,
+            date_of_birth: clientDateOfBirth,
+          }}
         />
       )}
 
@@ -5278,36 +5610,56 @@ export default function MetricsSection({ clientId, clientGender, clientDateOfBir
       )}
 
       {/* ── Phase edit modal (from list) ── */}
-      {phaseEditModal && (() => {
-        const ph = phaseEditModal;
-        const localRef = { current: { label: ph.label, phase_type: ph.phase_type, date_start: ph.date_start, date_end: ph.date_end ?? "", notes: ph.notes ?? "" } };
-        return (
-          <PhaseEditModal
-            phase={ph}
-            onClose={() => setPhaseEditModal(null)}
-            onSave={async (form) => {
-              setPhaseEditSaving(true);
-              try {
-                const res = await fetch(`/api/clients/${clientId}/phases/${ph.id}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ label: form.label, phase_type: form.phase_type, date_start: form.date_start, date_end: form.date_end || null, notes: form.notes || null }),
-                });
-                if (res.ok) {
-                  const updated = await res.json();
-                  setPhases((prev) => prev.map((p) => (p.id === ph.id ? updated : p)));
-                  setPhaseEditModal(null);
-                  showToast("Phase modifiée");
+      {phaseEditModal &&
+        (() => {
+          const ph = phaseEditModal;
+          const localRef = {
+            current: {
+              label: ph.label,
+              phase_type: ph.phase_type,
+              date_start: ph.date_start,
+              date_end: ph.date_end ?? "",
+              notes: ph.notes ?? "",
+            },
+          };
+          return (
+            <PhaseEditModal
+              phase={ph}
+              onClose={() => setPhaseEditModal(null)}
+              onSave={async (form) => {
+                setPhaseEditSaving(true);
+                try {
+                  const res = await fetch(
+                    `/api/clients/${clientId}/phases/${ph.id}`,
+                    {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        label: form.label,
+                        phase_type: form.phase_type,
+                        date_start: form.date_start,
+                        date_end: form.date_end || null,
+                        notes: form.notes || null,
+                      }),
+                    },
+                  );
+                  if (res.ok) {
+                    const updated = await res.json();
+                    setPhases((prev) =>
+                      prev.map((p) => (p.id === ph.id ? updated : p)),
+                    );
+                    setPhaseEditModal(null);
+                    showToast("Phase modifiée");
+                  }
+                } finally {
+                  setPhaseEditSaving(false);
                 }
-              } finally {
-                setPhaseEditSaving(false);
-              }
-            }}
-            saving={phaseEditSaving}
-          />
-        );
-        void localRef;
-      })()}
+              }}
+              saving={phaseEditSaving}
+            />
+          );
+          void localRef;
+        })()}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#181818] text-white text-xs font-bold px-4 py-2.5 rounded-full flex items-center gap-2">

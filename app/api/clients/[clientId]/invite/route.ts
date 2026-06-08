@@ -105,7 +105,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         return NextResponse.json({ error: 'Impossible de générer le lien de connexion' }, { status: 500 })
       }
 
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1h
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
       try {
         await sendAccessLinkEmail({
           to: client.email,
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const { data: created, error: createError } = await db.auth.admin.createUser({
       email: client.email,
       email_confirm: true,
-      password: crypto.randomUUID(), // placeholder — overwritten when client sets their password
+      password: crypto.randomUUID(),
     })
 
     if (createError || !created?.user) {

@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Lock,
   Unlock,
+  Sparkles,
 } from "lucide-react";
 import { useSetTopBar } from "@/components/layout/useSetTopBar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -199,6 +200,9 @@ export default function CoachBilanViewPage() {
   const [editMode, setEditMode] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [confirmReopen, setConfirmReopen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiReport, setAiReport] = useState<{ observations: string; evolutions: string; alertes: string | null; recommandations: string } | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // TopBar
   const topBarLeft = useMemo(
@@ -225,10 +229,36 @@ export default function CoachBilanViewPage() {
     [submission, clientId, router],
   );
 
+  async function handleAiAnalysis() {
+    if (!submission) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiReport(null);
+    try {
+      const res = await fetch(`/api/clients/${clientId}/ai-bilan-analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submission_id: submissionId }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setAiError(json.error ?? 'Erreur IA.'); return; }
+      setAiReport(json.report);
+    } catch { setAiError('Erreur réseau.'); }
+    finally { setAiLoading(false); }
+  }
+
   const topBarRight = useMemo(() => {
     if (!submission || submission.status !== "completed") return null;
     return (
       <div className="flex items-center gap-2">
+        <button
+          onClick={handleAiAnalysis}
+          disabled={aiLoading}
+          className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#1f8a65]/10 border border-[#1f8a65]/20 text-[11px] font-bold text-[#1f8a65] hover:bg-[#1f8a65]/20 transition-colors disabled:opacity-50 active:scale-95"
+        >
+          {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+          Analyse IA
+        </button>
         <button
           onClick={() => setConfirmReopen(true)}
           className="flex items-center gap-2 px-3 h-8 rounded-lg bg-white/[0.04] text-[12px] font-bold text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
@@ -245,7 +275,8 @@ export default function CoachBilanViewPage() {
         </button>
       </div>
     );
-  }, [submission]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submission, aiLoading]);
 
   useSetTopBar(topBarLeft, topBarRight);
 
@@ -383,6 +414,38 @@ export default function CoachBilanViewPage() {
   return (
     <main className="min-h-screen bg-[#121212] font-sans">
       <div className="max-w-3xl mx-auto px-6 py-8 flex flex-col gap-6">
+
+        {/* AI Analysis panel */}
+        {(aiReport || aiError) && (
+          <div className={`rounded-2xl border p-4 space-y-3 ${aiReport ? 'bg-[#1f8a65]/[0.06] border-[#1f8a65]/20' : 'bg-red-500/[0.06] border-red-500/20'}`}>
+            {aiError && <p className="text-[12px] text-red-400">{aiError}</p>}
+            {aiReport && (
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles size={13} className="text-[#1f8a65]" />
+                  <p className="text-[11px] font-bold text-[#1f8a65] uppercase tracking-[0.12em]">Analyse IA — brouillon coach</p>
+                </div>
+                {([
+                  { key: 'observations', label: 'Observations' },
+                  { key: 'evolutions',   label: 'Évolutions' },
+                  { key: 'alertes',      label: '⚠ Alertes', color: 'text-amber-400' },
+                  { key: 'recommandations', label: 'Recommandations' },
+                ] as { key: keyof typeof aiReport; label: string; color?: string }[]).map(({ key, label, color }) => {
+                  const val = aiReport[key]
+                  if (!val) return null
+                  return (
+                    <div key={key}>
+                      <p className={`text-[10px] font-bold uppercase tracking-[0.12em] mb-0.5 ${color ?? 'text-white/40'}`}>{label}</p>
+                      <p className="text-[12px] text-white/80 leading-relaxed whitespace-pre-wrap">{val}</p>
+                    </div>
+                  )
+                })}
+                <p className="text-[10px] text-white/25 pt-1">Ce rapport est sauvegardé dans les annotations. Vérifiez avant de partager.</p>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Header info */}
         <div className="flex items-start justify-between gap-4">
           <div>

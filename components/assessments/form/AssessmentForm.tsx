@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import Image from "next/image";
 import { ChevronLeft, ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
 import { BlockConfig, ResponseMap } from "@/types/assessment";
 import { evaluateCondition } from "@/lib/assessments/condition";
@@ -28,7 +27,9 @@ export default function AssessmentForm({
   initialResponses,
   onSaved,
 }: Props) {
-  const [responses, setResponses] = useState<ResponseMap>(initialResponses ?? {});
+  const [responses, setResponses] = useState<ResponseMap>(
+    initialResponses ?? {},
+  );
   const [currentBlock, setCurrentBlock] = useState(0);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -66,7 +67,10 @@ export default function AssessmentForm({
     function set(fieldKey: string, value: number) {
       const bid = findBlockId(fieldKey);
       if (!bid) return;
-      next[bid] = { ...(next[bid] ?? {}), [fieldKey]: Math.round(value * 100) / 100 };
+      next[bid] = {
+        ...(next[bid] ?? {}),
+        [fieldKey]: Math.round(value * 100) / 100,
+      };
     }
 
     const weight = getVal("weight_kg", next);
@@ -124,7 +128,7 @@ export default function AssessmentForm({
       const c = getVal("carbs_g", next);
       const f = getVal("fat_g", next);
       // Recalcule dès qu'au moins une macro est renseignée
-      const kcal = ((p ?? 0) * 4) + ((c ?? 0) * 4) + ((f ?? 0) * 9);
+      const kcal = (p ?? 0) * 4 + (c ?? 0) * 4 + (f ?? 0) * 9;
       if (kcal > 0) set("calories_target", kcal);
     }
 
@@ -298,11 +302,9 @@ export default function AssessmentForm({
         <div className="max-w-xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Image
-                src="/images/logo.png"
-                alt="STRYV"
-                width={24}
-                height={24}
+              <img
+                src="/logo/Logo%20STRYVR.svg"
+                alt="STRYVR"
                 className="w-6 h-6 object-contain"
               />
               <h1 className="font-semibold text-white">{clientName}</h1>

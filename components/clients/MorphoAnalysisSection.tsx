@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Dna, RefreshCw } from 'lucide-react'
+import { Dna, RefreshCw, MessageSquare } from 'lucide-react'
+import FeedbackComposer from '@/components/coach/FeedbackComposer'
 
 interface MorphoAnalysis {
   id: string
@@ -30,6 +31,7 @@ export function MorphoAnalysisSection({ clientId }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [pollingJobId, setPollingJobId] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [composerOpen, setComposerOpen] = useState(false)
 
   const fetchLatest = useCallback(async () => {
     try {
@@ -146,13 +148,22 @@ export function MorphoAnalysisSection({ clientId }: Props) {
 
       {latest && !isAnalyzing && (
         <div className="bg-white/[0.02] rounded-xl p-4 space-y-3 border-[0.3px] border-white/[0.06]">
-          <p className="text-[10px] text-white/35">
-            {new Date(latest.analysis_date).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-white/35">
+              {new Date(latest.analysis_date).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </p>
+            <button
+              onClick={() => setComposerOpen(true)}
+              className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 transition-colors"
+              title="Commenter cette analyse"
+            >
+              <MessageSquare size={13} />
+            </button>
+          </div>
 
           {latest.body_composition && (
             <div className="grid grid-cols-2 gap-2">
@@ -213,6 +224,18 @@ export function MorphoAnalysisSection({ clientId }: Props) {
         <p className="text-[11px] text-white/30 italic">
           Aucune analyse disponible. Ajoutez des photos au bilan pour démarrer.
         </p>
+      )}
+
+      {latest && composerOpen && (
+        <FeedbackComposer
+          open={composerOpen}
+          clientId={clientId}
+          entityType="morpho"
+          entityId={latest.id}
+          entityLabel={`Morpho du ${new Date(latest.analysis_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+          onClose={() => setComposerOpen(false)}
+          onSent={() => setComposerOpen(false)}
+        />
       )}
     </div>
   )

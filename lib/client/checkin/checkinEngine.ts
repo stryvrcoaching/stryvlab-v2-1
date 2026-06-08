@@ -1,4 +1,8 @@
 type SessionData = { flow_type: string; completed_at: string | null }
+type SessionWithDate = SessionData & { date?: string }
+
+import { activeWindowAt, type CheckinFlowType } from '@/lib/client/checkin/timeWindows'
+import { getPendingSlots, type PendingSlot } from '@/lib/client/checkin/pendingCheckins'
 
 /**
  * Determines which check-in flow to run based on current hour and completed sessions.
@@ -32,4 +36,31 @@ export function determineFlow(
   }
 
   return 'evening'
+}
+
+export function shouldProactiveInitNow(
+  now: Date,
+  timezone: string,
+  flow: CheckinFlowType,
+  chatSessions: SessionWithDate[],
+): boolean {
+  return getPendingSlots(now, timezone, chatSessions).some((slot) => slot.flow_type === flow)
+}
+
+export function determineSlotForClick(
+  now: Date,
+  timezone: string,
+  chatSessions: SessionWithDate[],
+): PendingSlot | null {
+  const pending = getPendingSlots(now, timezone, chatSessions)
+  if (!pending.length) return null
+
+  const activeWindow = activeWindowAt(now, timezone)
+  if (activeWindow) {
+    for (let i = pending.length - 1; i >= 0; i -= 1) {
+      if (pending[i]?.flow_type === activeWindow) return pending[i] ?? null
+    }
+  }
+
+  return pending[pending.length - 1] ?? null
 }

@@ -52,3 +52,18 @@ export function resolveProtocolDayByDate<TDay extends ProtocolDayLike>(
 
   return fallback
 }
+
+export function resolveRestProtocolDay<TDay extends ProtocolDayLike & { carb_cycle_type?: unknown; name?: unknown }>(
+  days: TDay[],
+): TDay | null {
+  if (!days.length) return null
+
+  const sortedDays = [...days].sort((a, b) => a.position - b.position)
+  const explicitRest = sortedDays.find((day) => String(day.carb_cycle_type ?? '').toLowerCase() === 'rest')
+  if (explicitRest) return explicitRest
+
+  const namedRest = sortedDays.find((day) => String(day.name ?? '').toLowerCase().includes('rest'))
+  if (namedRest) return namedRest
+
+  return sortedDays[0] ?? null
+}

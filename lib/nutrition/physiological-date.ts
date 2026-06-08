@@ -1,6 +1,8 @@
 import type { MealType } from "@/lib/nutrition/food-items"
 
 export const PHYSIOLOGICAL_DAY_OFFSET_HOURS = 4
+export const PHYSIOLOGICAL_DAY_CUTOFF_HOUR = PHYSIOLOGICAL_DAY_OFFSET_HOURS
+export const PHYSIOLOGICAL_DAY_CUTOFF_MINUTE = 0
 
 function pad(value: number): string {
   return String(value).padStart(2, "0")

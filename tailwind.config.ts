@@ -13,21 +13,23 @@ const config: Config = {
       // Fond #0E0E0E · cartes #161616 · bordures #2A2A2A · accent vert #1F8A65
       colors: {
         // ── DS v4.0 client gray scale ──────────────────────────
-        "c-bg":         "#080808",
-        "c-surface-1":  "#111111",
-        "c-surface-2":  "#1a1a1a",
-        "c-surface-3":  "#222222",
-        "c-hover":      "#2e2e2e",
-        "c-active":     "#404040",
-        "c-icon-off":   "#5a5a5a",
+        "c-bg": "#080808",
+        "c-surface-1": "#111111",
+        "c-surface-2": "#1a1a1a",
+        "c-surface-3": "#222222",
+        "c-hover": "#2e2e2e",
+        "c-active": "#404040",
+        "c-icon-off": "#5a5a5a",
         "c-text-muted": "#808080",
-        "c-text-body":  "#b0b0b0",
-        "c-text-head":  "#e0e0e0",
-        "c-text-emph":  "#f2f2f2",
+        "c-text-body": "#b0b0b0",
+        "c-text-head": "#e0e0e0",
+        "c-text-emph": "#f2f2f2",
         // ── DS v4.0 data colors (charts only) ─────────────────
-        "data-copper":  "#9d7052",
-        "data-gold":    "#a89060",
-        "data-petrol":  "#3d7070",
+        // copper=proteins(bronze), gold=carbs, petrol=fats(emerald), steel=water
+        "data-copper": "#914f28",
+        "data-gold": "#9a8038",
+        "data-petrol": "#2d7a62",
+        "data-steel": "#4d8090",
         // ── DS v2.0 coach tokens (keep — used by /coach) ───────
         background: "#121212",
         surface: "#141414",

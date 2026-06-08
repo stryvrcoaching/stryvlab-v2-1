@@ -3,6 +3,8 @@ import { Urbanist } from 'next/font/google';
 import { getBetaCount } from './actions';
 import { BetaLandingClient } from './components/BetaLandingClient';
 
+export const dynamic = 'force-dynamic';
+
 const urbanist = Urbanist({
   subsets: ['latin'],
   variable: '--font-urbanist',

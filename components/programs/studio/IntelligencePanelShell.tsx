@@ -98,7 +98,7 @@ export default function IntelligencePanelShell({
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overscroll-contain">
           <ProgramIntelligencePanel
             result={result}
             meta={meta}

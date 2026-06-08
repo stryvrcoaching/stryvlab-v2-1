@@ -42,7 +42,8 @@ export default async function ClientProgrammePage({
           id, name, day_of_week, days_of_week, position, notes,
           program_exercises (
             id, name, sets, reps, rest_sec, rir, notes, position,
-            primary_muscles, secondary_muscles, movement_pattern
+            primary_muscles, secondary_muscles, movement_pattern,
+            primary_muscle, primary_activation, secondary_muscles_detail, secondary_activations
           )
         )
       `)

@@ -14,7 +14,7 @@ const SELECT = `
   coach_program_template_sessions (
     id, name, day_of_week, days_of_week, position, notes,
     coach_program_template_exercises (
-      id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles, group_id,
+      id, name, sets, reps, rest_sec, rir, weight_increment_kg, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles, group_id,
       plane, mechanic, unilateral, primary_muscle, primary_activation,
       secondary_muscles_detail, secondary_activations, stabilizers,
       joint_stress_spine, joint_stress_knee, joint_stress_shoulder,
@@ -112,6 +112,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             primary_muscles: e.primary_muscles ?? [],
             secondary_muscles: e.secondary_muscles ?? [],
             group_id: e.group_id ?? null,
+            weight_increment_kg: e.weight_increment_kg != null ? Number(e.weight_increment_kg) : null,
             // Biomech fields
             plane: e.plane ?? null,
             mechanic: e.mechanic ?? null,
@@ -219,6 +220,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
           primary_muscles: e.primary_muscles ?? [],
           secondary_muscles: e.secondary_muscles ?? [],
           group_id: e.group_id ?? null,
+          weight_increment_kg: e.weight_increment_kg != null ? Number(e.weight_increment_kg) : null,
           // Biomech fields
           plane: e.plane ?? null,
           mechanic: e.mechanic ?? null,

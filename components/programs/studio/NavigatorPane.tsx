@@ -57,7 +57,7 @@ export default function NavigatorPane({
       </div>
 
       {/* Session tree */}
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className="flex-1 overflow-y-auto overscroll-contain py-1">
         {sessions.length === 0 && (
           <p className="text-[11px] text-white/25 text-center py-6 px-3">
             Aucune séance

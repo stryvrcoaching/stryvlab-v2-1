@@ -24,7 +24,7 @@ export default function NewProgramTemplatePage() {
   ), [router])
 
   return (
-    <div className="bg-[#121212] font-sans">
+    <div className="h-full bg-[#121212] font-sans">
       <ProgramTemplateBuilder topBarLeft={topBarLeft} />
     </div>
   )

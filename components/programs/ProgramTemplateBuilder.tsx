@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useSetTopBar } from "@/components/layout/useSetTopBar";
+import { useSetFullscreenPage } from "@/components/layout/CoachShell";
 import {
   Plus,
   Trash2,
@@ -159,6 +160,7 @@ interface Exercise {
   reps: string;
   rest_sec: number | null;
   rir: number | null;
+  weight_increment_kg: number | null;
   notes: string;
   image_url: string | null;
   movement_pattern: string | null;
@@ -212,6 +214,7 @@ function emptyExercise(): Exercise {
     reps: "8-12",
     rest_sec: 90,
     rir: 2,
+    weight_increment_kg: null,
     notes: "",
     image_url: null,
     movement_pattern: null,
@@ -241,6 +244,7 @@ function emptySession(): Session {
 }
 
 interface Props {
+  noFullscreen?: boolean; // page parent gère son propre layout h-screen
   initial?: any;
   templateId?: string;
   programId?: string;   // mode programme client (vs template)
@@ -252,10 +256,12 @@ interface Props {
   topBarLeft?: ReactNode;
 }
 
-export default function ProgramTemplateBuilder({ initial, templateId, programId, clientId, onSaved, onCancel, onTopBarActions, topBarLeft }: Props) {
+export default function ProgramTemplateBuilder({ initial, templateId, programId, clientId, onSaved, onCancel, onTopBarActions, topBarLeft, noFullscreen }: Props) {
   const router = useRouter();
   const isProgram = !!programId;
   const isEdit = !!templateId || isProgram;
+
+  useSetFullscreenPage(!noFullscreen)
 
   const [meta, setMeta] = useState<TemplateMeta>(() =>
     initial
@@ -307,6 +313,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             reps: e.reps,
             rest_sec: e.rest_sec,
             rir: e.rir,
+            weight_increment_kg: e.weight_increment_kg ?? null,
             notes: e.notes ?? "",
             image_url: e.image_url ?? null,
             movement_pattern: e.movement_pattern ?? null,
@@ -622,6 +629,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             reps: e.reps,
             rest_sec: e.rest_sec,
             rir: e.rir,
+            weight_increment_kg: e.weight_increment_kg ?? null,
             notes: e.notes,
             image_url: e.image_url,
             movement_pattern: e.movement_pattern,
@@ -740,34 +748,47 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
       const ex = session.exercises[ei]
 
       if (ex.group_id) {
-        // Remove from superset — if only 1 exercise left in group, clear the other too
         const groupId = ex.group_id
         const groupMembers = session.exercises.filter(e => e.group_id === groupId)
-        return prev.map((s, i) => {
-          if (i !== si) return s
-          const updated = s.exercises.map(e => {
-            if (e.group_id !== groupId) return e
-            // If 2 members: removing one should clear both if only 1 remains after
-            if (groupMembers.length <= 2 || e === ex) return { ...e, group_id: undefined }
-            return e
-          })
-          return { ...s, exercises: updated }
-        })
-      } else {
-        // Add to superset with the next exercise — create a new group_id
         const nextEx = session.exercises[ei + 1]
-        if (!nextEx) return prev // no next exercise to pair with
-        const groupId = `sg-${Date.now()}`
+        const nextInSameGroup = nextEx?.group_id === groupId
+
+        if (!nextInSameGroup && nextEx) {
+          // Exercice suivant pas dans le groupe → étendre le groupe vers le suivant
+          return prev.map((s, i) => {
+            if (i !== si) return s
+            return {
+              ...s,
+              exercises: s.exercises.map((e, idx) => {
+                if (idx === ei + 1) return { ...e, group_id: groupId }
+                return e
+              }),
+            }
+          })
+        } else {
+          // Suivant déjà dans le groupe (ou pas de suivant) → retirer ex du groupe
+          return prev.map((s, i) => {
+            if (i !== si) return s
+            const updated = s.exercises.map(e => {
+              if (e.group_id !== groupId) return e
+              if (groupMembers.length <= 2 || e === ex) return { ...e, group_id: undefined }
+              return e
+            })
+            return { ...s, exercises: updated }
+          })
+        }
+      } else {
+        // Pas dans un groupe → créer groupe avec suivant (ou rejoindre groupe du suivant)
+        const nextEx = session.exercises[ei + 1]
+        if (!nextEx) return prev
+        const targetGroupId = nextEx.group_id ?? `sg-${Date.now()}`
         return prev.map((s, i) => {
           if (i !== si) return s
           return {
             ...s,
             exercises: s.exercises.map((e, idx) => {
-              if (idx === ei) return { ...e, group_id: groupId }
-              if (idx === ei + 1) {
-                // If next exercise already has a group, join that group instead
-                return { ...e, group_id: nextEx.group_id ?? groupId }
-              }
+              if (idx === ei) return { ...e, group_id: targetGroupId }
+              if (idx === ei + 1) return { ...e, group_id: targetGroupId }
               return e
             }),
           }
@@ -833,11 +854,11 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-    <div className="h-[calc(100vh-96px)] flex flex-col bg-[#121212] overflow-hidden">
+    <div className="h-full flex flex-col bg-[#121212] overflow-hidden">
       {/* Dual-pane layout */}
       <div ref={containerRef} className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
         {/* Navigator */}
-        <div style={{ flexGrow: navWidth, flexShrink: 1, flexBasis: 0, minWidth: 160, overflow: 'hidden' }}>
+        <div style={{ flexGrow: navWidth, flexShrink: 1, flexBasis: 0, minWidth: 160, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <NavigatorPane
             sessions={navSessions}
             activeSessionIndex={null}
@@ -860,7 +881,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
         />
 
         {/* Editor — takes remaining space */}
-        <div style={{ flexGrow: 100 - navWidth - intelWidth, flexShrink: 1, flexBasis: 0, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ flexGrow: 100 - navWidth - intelWidth, flexShrink: 1, flexBasis: 0, minWidth: 0, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <EditorPane
             meta={meta}
             sessions={orderedSessions}
@@ -908,7 +929,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
         />
 
         {/* Intelligence Panel */}
-        <div style={{ flexGrow: intelWidth, flexShrink: 1, flexBasis: 0, minWidth: 260, overflow: 'hidden' }}>
+        <div style={{ flexGrow: intelWidth, flexShrink: 1, flexBasis: 0, minWidth: 260, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <IntelligencePanelShell
             result={intelligenceResult}
             meta={meta}

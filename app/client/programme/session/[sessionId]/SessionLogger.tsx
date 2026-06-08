@@ -30,6 +30,7 @@ interface Exercise {
   rep_min: number | null
   rep_max: number | null
   progressive_overload_enabled: boolean
+  weight_increment_kg?: number | null
   primary_muscles?: string[]
   secondary_muscles?: string[]
   group_id?: string | null
@@ -57,6 +58,7 @@ interface LastPerf {
   reps: number | null
   rir?: number | null
   side?: string | null
+  set_number?: number | null
 }
 
 interface Props {
@@ -169,7 +171,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const [elapsed, setElapsed] = useState(0)
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({})
   const [showNoteInput, setShowNoteInput] = useState<string | null>(null)
-  const [showImage, setShowImage] = useState(true)
+  const [hiddenImages, setHiddenImages] = useState<Set<string>>(new Set())
   const [swapTarget, setSwapTarget] = useState<string | null>(null)
   const [swappedNames, setSwappedNames] = useState<Record<string, string>>({})
   const [altSheetTarget, setAltSheetTarget] = useState<number | null>(null)
@@ -258,13 +260,21 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     const nextKey = recKey(exercise_id, nextSet.set_number, side)
     if (manuallyEdited.has(nextKey)) return
 
+    const ex = exercises.find(e => e.id === exercise_id)
+
+    // Match historique par set_number exact — évite d'utiliser set 3 comme référence pour set 1
     const history = lastPerformance[exercise_name] ?? []
-    const historyEntry = history.find(h => side === 'bilateral' ? true : h.side === side)
+    const historyEntry = history.find(h =>
+      (side === 'bilateral' ? true : h.side === side) &&
+      (h as any).set_number === nextSet.set_number
+    ) ?? history.find(h => side === 'bilateral' ? true : h.side === side)
+
     const lastWeek = historyEntry && historyEntry.weight != null && historyEntry.reps != null
       ? { weight_kg: historyEntry.weight, reps: historyEntry.reps, rir_actual: historyEntry.rir ?? 2 }
       : undefined
 
     const plannedReps = parseInt(nextSet.planned_reps, 10) || 0
+    const prevSetWeight = parseFloat(completedSet.actual_weight_kg) || undefined
 
     const rec = recommendNextSet({
       actual_weight_kg: weight,
@@ -274,7 +284,12 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       level,
       planned_reps: plannedReps,
       set_number: nextSet.set_number,
+      rep_min: ex?.rep_min ?? undefined,
+      rep_max: ex?.rep_max ?? undefined,
+      target_rir: ex?.target_rir ?? ex?.rir ?? undefined,
+      weight_increment_kg: ex?.weight_increment_kg ?? 2.5,
       lastWeek,
+      prev_set_weight_kg: prevSetWeight,
     })
 
     if (!rec) return
@@ -536,17 +551,20 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     return `Atteins ${ex.rep_max} reps à RIR ${effectiveRir} sur toutes tes séries pour augmenter la charge.`
   }
 
-  // ── Supersets — couleur par group_id ──
+  // ── Supersets — couleur + lettre par group_id ──
   const SUPERSET_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
   const supersetColors: Record<string, string> = {}
+  const supersetLetters: Record<string, string> = {} // group_id → 'A', 'B', 'C'...
   let colorIdx = 0
   for (const ex of exercises) {
     if (ex.group_id && !supersetColors[ex.group_id]) {
       supersetColors[ex.group_id] = SUPERSET_COLORS[colorIdx % SUPERSET_COLORS.length]
+      supersetLetters[ex.group_id] = String.fromCharCode(65 + colorIdx) // A, B, C...
       colorIdx++
     }
   }
   const isSuperset = currentGroup.length > 1
+  const supersetLetter = isSuperset && currentGroup[0].group_id ? supersetLetters[currentGroup[0].group_id] ?? 'A' : ''
 
   // ── Chrono repos — valeurs dérivées ──
   const restRemaining = restPrescribed !== null ? restPrescribed - restElapsed : null // peut être négatif
@@ -707,11 +725,10 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const remainingSets = totalSets - completedCount
 
   return (
-    <div className="min-h-screen bg-[#121212] font-sans pb-32">
+    <div className="min-h-screen bg-[#121212] font-sans pb-24">
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.4)] px-5 py-4">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#121212] px-5 py-4">
         <div className="relative z-10 max-w-lg mx-auto flex items-center justify-between">
           <div className="h-9 w-9" />
           <div className="text-center">
@@ -894,362 +911,317 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           </button>
         </div>
 
-        {/* ── Superset label ── */}
+        {/* ── Superset — bande couleur (pas de label texte) ── */}
         {isSuperset && currentGroup[0].group_id && (
-          <div className="flex items-center gap-2">
-            <div
-              className="h-px flex-1 rounded-full"
-              style={{ backgroundColor: `${supersetColors[currentGroup[0].group_id]}40` }}
-            />
-            <span
-              className="text-[10px] font-black uppercase tracking-[0.18em] px-2.5 py-1 rounded-lg"
-              style={{
-                backgroundColor: `${supersetColors[currentGroup[0].group_id]}18`,
-                color: supersetColors[currentGroup[0].group_id],
-              }}
-            >
-              Superset · {currentGroup.length} exercices
-            </span>
-            <div
-              className="h-px flex-1 rounded-full"
-              style={{ backgroundColor: `${supersetColors[currentGroup[0].group_id]}40` }}
-            />
-          </div>
+          <div className="h-0.5 rounded-full mx-1" style={{ backgroundColor: `${supersetColors[currentGroup[0].group_id]}60` }} />
         )}
 
-        {/* ── Cards exercices (une par exercice dans le groupe) ── */}
-        {currentGroup.map((ex, exInGroupIdx) => {
-          const exSetsForEx = sets.filter(s => s.exercise_id === ex.id)
-          const allExDone = exSetsForEx.length > 0 && exSetsForEx.every(s => s.completed)
-          const exLastPerf = lastPerformance[ex.name] ?? []
-          const exEffectiveRir = ex.target_rir ?? ex.rir
-          const exProgressionHint = getProgressionHint(ex)
-          const groupColor = ex.group_id ? supersetColors[ex.group_id] : null
+        {/* ── Exercices headers (solos) ou round-based (supersets) ── */}
+        {!isSuperset ? (
+          // ── Solo : affichage classique par exercice ──
+          currentGroup.map((ex) => {
+            const exSetsForEx = sets.filter(s => s.exercise_id === ex.id)
+            const allExDone = exSetsForEx.length > 0 && exSetsForEx.every(s => s.completed)
+            const exLastPerf = lastPerformance[ex.name] ?? []
+            const exEffectiveRir = ex.target_rir ?? ex.rir
+            const exProgressionHint = getProgressionHint(ex)
 
-          function getExLastPerfLabel(setNum: number, side: 'left' | 'right' | 'bilateral') {
-            if (exLastPerf.length === 0) return null
-            const match = exLastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
-            return match ?? exLastPerf[0]
-          }
+            function getExLastPerfLabel(setNum: number, side: 'left' | 'right' | 'bilateral') {
+              if (exLastPerf.length === 0) return null
+              const match = exLastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
+              return match ?? exLastPerf[0]
+            }
 
-          return (
-            <div
-              key={ex.id}
-              className="bg-white/[0.02] border rounded-2xl overflow-hidden"
-              style={{ borderColor: groupColor ? `${groupColor}30` : 'rgba(255,255,255,0.06)' }}
-            >
-              {/* Connecteur superset entre les cards */}
-              {isSuperset && exInGroupIdx > 0 && groupColor && (
-                <div
-                  className="absolute -mt-4 left-1/2 -translate-x-1/2 w-0.5 h-4 rounded-full"
-                  style={{ backgroundColor: `${groupColor}60` }}
-                />
-              )}
-
-              {/* Image de l'exercice — uniquement pour le premier du groupe ou les solos */}
-              {ex.image_url && (!isSuperset || exInGroupIdx === 0) && (
-                <div className="relative">
-                  {showImage ? (
-                    <div className="relative w-full aspect-square bg-black/20 overflow-hidden">
-                      <Image
-                        src={ex.image_url}
-                        alt={ex.name}
-                        fill
-                        className="object-cover"
-                        unoptimized={ex.image_url.endsWith('.gif')}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 to-transparent" />
-                      <button
-                        onClick={() => setShowImage(false)}
-                        className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] font-medium text-white/60 bg-black/40 backdrop-blur-sm px-2.5 py-1.5 rounded-lg hover:bg-black/60 transition-colors"
-                      >
-                        <ChevronUp size={11} />
-                        {t('logger.demo.hide')}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowImage(true)}
-                      className="w-full h-14 bg-black/20 flex items-center justify-center gap-2 text-[10px] font-medium text-white/35 hover:text-white/55 hover:bg-black/30 transition-colors"
-                    >
-                      <span>{t('logger.demo.show')}</span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* En-tête exercice */}
-              <div className="px-5 pt-4 pb-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {isSuperset && groupColor && (
-                        <span
-                          className="text-[9px] font-black uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-md shrink-0"
-                          style={{ backgroundColor: `${groupColor}22`, color: groupColor, border: `1px solid ${groupColor}44` }}
-                        >
-                          {exInGroupIdx + 1}
-                        </span>
-                      )}
-                      <h2 className="text-[15px] font-bold text-white leading-tight">
-                        {swappedNames[ex.id] ?? ex.name}
-                      </h2>
-                      <button
-                        onClick={() => setSwapTarget(ex.id)}
-                        className="flex items-center gap-1 h-7 px-2 rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
-                        title="Remplacer temporairement"
-                      >
-                        <ArrowLeftRight size={13} />
-                      </button>
-                      {ex.clientAlternatives && ex.clientAlternatives.length > 0 && !swappedNames[ex.id] && (
-                        <button
-                          type="button"
-                          onClick={() => setAltSheetTarget(exercises.indexOf(ex))}
-                          className="text-[10px] font-semibold text-white/30 hover:text-amber-400 transition-colors"
-                        >
-                          Indisponible ?
+            return (
+              <div key={ex.id} className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
+                {ex.image_url && (
+                  <div className="relative">
+                    {!hiddenImages.has(ex.id) ? (
+                      <div className="relative w-full aspect-square bg-black/20 overflow-hidden">
+                        <Image src={ex.image_url} alt={ex.name} fill className="object-cover" unoptimized={ex.image_url.endsWith('.gif')} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 to-transparent" />
+                        <button onClick={() => setHiddenImages(prev => new Set(prev).add(ex.id))} className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] font-medium text-white/60 bg-black/40 backdrop-blur-sm px-2.5 py-1.5 rounded-lg hover:bg-black/60 transition-colors">
+                          <ChevronUp size={11} />{t('logger.demo.hide')}
                         </button>
-                      )}
-                      {ex.progressive_overload_enabled && ex.rep_min !== null && (
-                        <TrendingUp size={12} className="text-[#1f8a65] shrink-0" />
-                      )}
-                      {ex.is_unilateral && (
-                        <span className="text-[9px] font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
-                          Unilatéral
-                        </span>
-                      )}
-                      {allExDone && (
-                        <CheckCircle2 size={14} className="text-[#1f8a65] shrink-0" />
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-3 mt-1.5">
-                      <span className="text-[11px] font-mono font-bold text-[#1f8a65]">
-                        {ex.sets} × {ex.reps}
-                      </span>
-                      {/* Temps de repos : affiché seulement sur le dernier exercice du groupe */}
-                      {ex.rest_sec && (!isSuperset || exInGroupIdx === currentGroup.length - 1) && (
-                        <span className="flex items-center gap-1 text-[11px] text-white/40">
-                          <Clock size={10} />{ex.rest_sec}s repos
-                        </span>
-                      )}
-                      {isSuperset && exInGroupIdx < currentGroup.length - 1 && (
-                        <span className="text-[11px] text-white/25 italic">Enchaîner directement</span>
-                      )}
-                      {exEffectiveRir !== null && exEffectiveRir !== undefined && (
-                        <span className="text-[11px] text-white/40">
-                          {t('logger.rir.target')} : <span className="text-white/70 font-semibold">{exEffectiveRir}</span>
-                        </span>
-                      )}
-                      {ex.current_weight_kg !== null && (
-                        <span className="text-[11px] text-white/40">
-                          Suggéré : <span className="text-white/70 font-semibold">{ex.current_weight_kg}kg</span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-white/25 shrink-0 mt-1">
-                    {exercises.indexOf(ex) + 1}/{exercises.length}
-                  </span>
-                </div>
-
-                {exProgressionHint && (
-                  <div className="mt-3 px-3 py-2 bg-[#1f8a65]/[0.08] border border-[#1f8a65]/20 rounded-xl">
-                    <p className="text-[10px] text-[#1f8a65] font-medium leading-relaxed">{exProgressionHint}</p>
+                      </div>
+                    ) : (
+                      <button onClick={() => setHiddenImages(prev => { const n = new Set(prev); n.delete(ex.id); return n })} className="w-full h-14 bg-black/20 flex items-center justify-center gap-2 text-[10px] font-medium text-white/35 hover:text-white/55 hover:bg-black/30 transition-colors">
+                        <span>{t('logger.demo.show')}</span>
+                      </button>
+                    )}
                   </div>
                 )}
-
-                {ex.notes && (
-                  <p className="mt-2 text-[11px] text-white/35 italic leading-relaxed">{ex.notes}</p>
-                )}
-              </div>
-
-              {/* ── Sets ── */}
-              <div className="border-t border-white/[0.05]">
-                <div
-                  className="grid items-center px-5 py-2 text-[9px] font-bold uppercase tracking-[0.14em] text-white/25"
-                  style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}
-                >
-                  <div>#</div>
-                  {ex.is_unilateral && <div>{t('logger.set')}</div>}
-                  <div>{t('logger.target.label')}</div>
-                  <div>{t('logger.actual.label')}</div>
-                  <div>Kg</div>
-                  <div>{t('logger.rir.label')}</div>
-                  <div className="text-center">✓</div>
-                </div>
-
-                {exSetsForEx.map((s, idx) => {
-                  const lastP = getExLastPerfLabel(s.set_number, s.side)
-                  const isFirstOfSet = !ex.is_unilateral || s.side === 'left'
-                  // Pour supersets : le repos démarre uniquement sur le dernier exercice du groupe
-                  const restSecForToggle = isSuperset && exInGroupIdx < currentGroup.length - 1
-                    ? null
-                    : ex.rest_sec
-
-                  return (
-                    <div key={`${s.set_number}-${s.side}`}>
-                      {ex.is_unilateral && isFirstOfSet && idx > 0 && (
-                        <div className="h-px bg-white/[0.04] mx-5" />
-                      )}
-                      <div
-                        className={`grid items-center gap-2 px-5 py-3 transition-all duration-200 ${
-                          s.completed ? 'bg-[#1f8a65]/[0.08]' : ''
-                        } ${!ex.is_unilateral ? 'border-t border-white/[0.04]' : ''}`}
-                        style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}
-                      >
-                        <div className="text-[12px] font-mono font-bold text-white/30">
-                          {(!ex.is_unilateral || s.side === 'left') ? s.set_number : ''}
-                        </div>
-
-                        {ex.is_unilateral && (
-                          <div className={`text-[11px] font-bold ${sideColor(s.side)}`}>
-                            {sideLabel(s.side)}
-                          </div>
+                <div className="px-5 pt-4 pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-[15px] font-bold text-white leading-tight">{swappedNames[ex.id] ?? ex.name}</h2>
+                        <button onClick={() => setSwapTarget(ex.id)} className="flex items-center gap-1 h-7 px-2 rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-colors"><ArrowLeftRight size={13} /></button>
+                        {ex.clientAlternatives && ex.clientAlternatives.length > 0 && !swappedNames[ex.id] && (
+                          <button type="button" onClick={() => setAltSheetTarget(exercises.indexOf(ex))} className="text-[10px] font-semibold text-white/30 hover:text-amber-400 transition-colors">Indisponible ?</button>
                         )}
-
-                        <div>
-                          <div className="text-[11px] font-mono text-white/30 truncate">{s.planned_reps}</div>
-                          {lastP && (!ex.is_unilateral || s.side === 'left') && (
-                            <div className="text-[9px] text-white/20 mt-0.5 truncate">
-                              ↩ {lastP.weight ? `${lastP.weight}kg` : '—'} × {lastP.reps ?? '—'}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Reps */}
-                        {(() => {
-                          const key = recKey(ex.id, s.set_number, s.side)
-                          const isRec = !!recommendations[key] && !s.completed
-                          return (
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              value={s.actual_reps}
-                              onFocus={() => { activeInputRef.current = true }}
-                              onBlur={() => { activeInputRef.current = false }}
-                              onChange={e => {
-                                setManuallyEdited(prev => new Set(prev).add(key))
-                                setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
-                                updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value })
-                              }}
-                              placeholder={lastP?.reps ? String(lastP.reps) : '—'}
-                              className={`h-10 rounded-xl px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 ${
-                                isRec
-                                  ? 'bg-[#1f8a65]/[0.06] border border-[#1f8a65]/30 text-[#1f8a65]/70'
-                                  : 'bg-white/[0.04] border border-white/[0.06] text-white'
-                              }`}
-                            />
-                          )
-                        })()}
-
-                        {/* Kg */}
-                        <div className="flex flex-col gap-0.5">
+                        {ex.progressive_overload_enabled && ex.rep_min !== null && <TrendingUp size={12} className="text-[#1f8a65] shrink-0" />}
+                        {ex.is_unilateral && <span className="text-[9px] font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">Unilatéral</span>}
+                        {allExDone && <CheckCircle2 size={14} className="text-[#1f8a65] shrink-0" />}
+                      </div>
+                      <div className="flex flex-wrap gap-3 mt-1.5">
+                        <span className="text-[11px] font-mono font-bold text-[#1f8a65]">{ex.sets} × {ex.reps}</span>
+                        {ex.rest_sec ? <span className="flex items-center gap-1 text-[11px] text-white/40"><Clock size={10} />{ex.rest_sec}s repos</span> : null}
+                        {exEffectiveRir !== null && exEffectiveRir !== undefined && <span className="text-[11px] text-white/40">{t('logger.rir.target')} : <span className="text-white/70 font-semibold">{exEffectiveRir}</span></span>}
+                        {ex.current_weight_kg !== null && <span className="text-[11px] text-white/40">Suggéré : <span className="text-white/70 font-semibold">{ex.current_weight_kg}kg</span></span>}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-white/25 shrink-0 mt-1">{exercises.indexOf(ex) + 1}/{exercises.length}</span>
+                  </div>
+                  {exProgressionHint && <div className="mt-3 px-3 py-2 bg-[#1f8a65]/[0.08] border border-[#1f8a65]/20 rounded-xl"><p className="text-[10px] text-[#1f8a65] font-medium leading-relaxed">{exProgressionHint}</p></div>}
+                  {ex.notes && <p className="mt-2 text-[11px] text-white/35 italic leading-relaxed">{ex.notes}</p>}
+                </div>
+                <div className="border-t border-white/[0.05]">
+                  <div className="grid items-center px-5 py-2 text-[9px] font-bold uppercase tracking-[0.14em] text-white/25" style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}>
+                    <div>#</div>{ex.is_unilateral && <div>{t('logger.set')}</div>}<div>{t('logger.target.label')}</div><div>{t('logger.actual.label')}</div><div>Kg</div><div>{t('logger.rir.label')}</div><div className="text-center">✓</div>
+                  </div>
+                  {exSetsForEx.map((s, idx) => {
+                    const lastP = getExLastPerfLabel(s.set_number, s.side)
+                    const isFirstOfSet = !ex.is_unilateral || s.side === 'left'
+                    return (
+                      <div key={`${s.set_number}-${s.side}`}>
+                        {ex.is_unilateral && isFirstOfSet && idx > 0 && <div className="h-px bg-white/[0.04] mx-5" />}
+                        <div className={`grid items-center gap-2 px-5 py-3 transition-all duration-200 ${s.completed ? 'bg-[#1f8a65]/[0.08]' : ''} ${!ex.is_unilateral ? 'border-t border-white/[0.04]' : ''}`} style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}>
+                          <div className="text-[12px] font-mono font-bold text-white/30">{(!ex.is_unilateral || s.side === 'left') ? s.set_number : ''}</div>
+                          {ex.is_unilateral && <div className={`text-[11px] font-bold ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>}
+                          {(() => {
+                            const key = recKey(ex.id, s.set_number, s.side)
+                            const rec = recommendations[key]
+                            const isRec = !!rec && !s.completed
+                            return (
+                              <div>
+                                <div className="text-[11px] font-mono text-white/30 truncate">{s.planned_reps}</div>
+                                {lastP && (!ex.is_unilateral || s.side === 'left') && (
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <span className="text-[9px] text-white/20 truncate">↩ {lastP.weight ? `${lastP.weight}kg` : '—'} × {lastP.reps ?? '—'}</span>
+                                    {isRec && <DeltaBadge rec={rec} />}
+                                  </div>
+                                )}
+                                {isRec && !lastP && <DeltaBadge rec={rec} />}
+                              </div>
+                            )
+                          })()}
                           {(() => {
                             const key = recKey(ex.id, s.set_number, s.side)
                             const isRec = !!recommendations[key] && !s.completed
                             return (
-                              <>
-                                <input
-                                  type="number"
-                                  inputMode="decimal"
-                                  min={0}
-                                  step={0.5}
-                                  value={s.actual_weight_kg}
-                                  onFocus={() => { activeInputRef.current = true }}
-                                  onBlur={() => { activeInputRef.current = false }}
-                                  onChange={e => {
-                                    setManuallyEdited(prev => new Set(prev).add(key))
-                                    setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
-                                    updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value })
-                                  }}
-                                  placeholder={lastP?.weight ? String(lastP.weight) : '—'}
-                                  className={`h-10 rounded-xl px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 ${
-                                    isRec
-                                      ? 'bg-[#1f8a65]/[0.06] border border-[#1f8a65]/30 text-[#1f8a65]/70'
-                                      : 'bg-white/[0.04] border border-white/[0.06] text-white'
-                                  }`}
-                                />
-                                {isRec ? <DeltaBadge rec={recommendations[key]} /> : null}
-                              </>
+                              <input type="number" inputMode="numeric" min={0} value={s.actual_reps}
+                                onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                                onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next }); updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value }) }}
+                                placeholder={lastP?.reps ? String(lastP.reps) : '—'}
+                                className={`h-10 rounded-xl px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 ${isRec ? 'bg-[#1f8a65]/[0.06] border border-[#1f8a65]/30 text-[#1f8a65]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
                             )
                           })()}
+                          <input type="number" inputMode="decimal" min={0} step={0.5} value={s.actual_weight_kg}
+                            onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                            onChange={e => { const key = recKey(ex.id, s.set_number, s.side); setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next }); updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value }) }}
+                            placeholder={lastP?.weight ? String(lastP.weight) : '—'}
+                            className={`h-10 rounded-xl px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 ${(() => { const key = recKey(ex.id, s.set_number, s.side); return !!recommendations[key] && !s.completed })() ? 'bg-[#1f8a65]/[0.06] border border-[#1f8a65]/30 text-[#1f8a65]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
+                          <input type="number" inputMode="numeric" min={0} max={10} value={s.rir_actual}
+                            onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                            onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
+                            placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
+                            className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 focus:border-violet-400/30 w-full placeholder:text-white/20 transition-colors" />
+                          <button onClick={() => toggleSet(ex.id, s.set_number, s.side, ex.rest_sec)} title="Valider" className={`flex justify-center items-center h-10 w-10 rounded-xl transition-all duration-200 active:scale-90 ${s.completed ? 'bg-[#1f8a65]/20 shadow-[0_0_12px_rgba(31,138,101,0.3)]' : 'hover:bg-white/[0.06]'}`}>
+                            {s.completed ? <CheckCircle2 size={22} className="text-[#1f8a65]" /> : <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />}
+                          </button>
                         </div>
-
-                        {/* RIR */}
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          max={10}
-                          value={s.rir_actual}
-                          onFocus={() => { activeInputRef.current = true }}
-                          onBlur={() => { activeInputRef.current = false }}
-                          onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
-                          placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
-                          className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 focus:border-violet-400/30 w-full placeholder:text-white/20 transition-colors"
-                        />
-
-                        {/* Bouton valider */}
-                        <button
-                          onClick={() => toggleSet(ex.id, s.set_number, s.side, restSecForToggle)}
-                          title="Valider et lancer le repos"
-                          className={`flex justify-center items-center h-10 w-10 rounded-xl transition-all duration-200 active:scale-90 ${
-                            s.completed
-                              ? 'bg-[#1f8a65]/20 shadow-[0_0_12px_rgba(31,138,101,0.3)]'
-                              : 'hover:bg-white/[0.06]'
-                          }`}
-                        >
-                          {s.completed ? (
-                            <CheckCircle2 size={22} className="text-[#1f8a65]" />
-                          ) : (
-                            <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />
-                          )}
-                        </button>
                       </div>
+                    )
+                  })}
+                </div>
+                <div className="border-t border-white/[0.05] px-5 py-3">
+                  {showNoteInput === ex.id ? (
+                    <div className="flex flex-col gap-2">
+                      <textarea autoFocus rows={3} value={exerciseNotes[ex.id] ?? ''} onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }} onChange={e => setExerciseNotes(prev => ({ ...prev, [ex.id]: e.target.value }))} placeholder={t('logger.note.placeholder')} className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] text-white/80 placeholder:text-white/20 outline-none focus:ring-1 focus:ring-[#1f8a65]/30 focus:border-[#1f8a65]/20 resize-none transition-colors leading-relaxed" />
+                      <div className="flex justify-end"><button onClick={() => setShowNoteInput(null)} className="px-4 py-1.5 rounded-lg text-[11px] font-medium text-white/40 hover:text-white/60 transition-colors">Fermer</button></div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setShowNoteInput(ex.id)} className="flex items-center gap-2 text-[11px] font-medium text-white/30 hover:text-white/55 transition-colors">
+                      <MessageSquare size={13} />
+                      {exerciseNotes[ex.id] ? <span className="text-white/50 truncate max-w-[260px]">{exerciseNotes[ex.id]}</span> : 'Ajouter un ressenti'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })
+        ) : (
+          // ── Superset : affichage par round ──
+          (() => {
+            const groupColor = currentGroup[0].group_id ? supersetColors[currentGroup[0].group_id] : '#f59e0b'
+            const numRounds = Math.max(...currentGroup.map(ex => ex.sets))
+
+            return (
+              <div className="flex flex-col gap-3">
+                {/* En-têtes exercices du superset */}
+                <div className="border rounded-2xl overflow-hidden" style={{ borderColor: `${groupColor}40`, backgroundColor: `${groupColor}06` }}>
+                  {currentGroup.map((ex, exIdx) => {
+                    const exEffectiveRir = ex.target_rir ?? ex.rir
+                    const allExDone = sets.filter(s => s.exercise_id === ex.id).every(s => s.completed)
+                    const code = `${supersetLetter}${exIdx + 1}`
+                    return (
+                      <div key={ex.id} className={exIdx > 0 ? 'border-t' : ''} style={exIdx > 0 ? { borderColor: `${groupColor}20` } : {}}>
+                        {/* Image fullwidth collapsible — identique pour tous les exercices du superset */}
+                        {ex.image_url && (
+                          !hiddenImages.has(ex.id) ? (
+                            <div className="relative w-full aspect-[16/9] bg-black/20 overflow-hidden">
+                              <Image src={ex.image_url} alt={ex.name} fill className="object-cover" unoptimized={ex.image_url.endsWith('.gif')} />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                              <button onClick={() => setHiddenImages(prev => new Set(prev).add(ex.id))} className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] font-medium text-white/60 bg-black/40 backdrop-blur-sm px-2.5 py-1.5 rounded-lg hover:bg-black/60 transition-colors">
+                                <ChevronUp size={11} />{t('logger.demo.hide')}
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setHiddenImages(prev => { const n = new Set(prev); n.delete(ex.id); return n })} className="w-full h-10 flex items-center justify-center gap-2 text-[10px] font-medium text-white/30 hover:text-white/50 transition-colors" style={{ borderBottom: `1px solid ${groupColor}20` }}>
+                              <span>{t('logger.demo.show')}</span>
+                            </button>
+                          )
+                        )}
+                        <div className="px-4 py-3 flex items-start gap-3">
+                          {/* Code A1/A2 */}
+                          <span className="text-[11px] font-black w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 tabular-nums" style={{ backgroundColor: `${groupColor}25`, color: groupColor, border: `1px solid ${groupColor}50` }}>{code}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-2 flex-wrap">
+                              <p className="text-[13px] font-bold text-white leading-snug">{swappedNames[ex.id] ?? ex.name}</p>
+                              {allExDone && <CheckCircle2 size={12} className="text-[#1f8a65] shrink-0 mt-0.5" />}
+                              <button onClick={() => setSwapTarget(ex.id)} className="flex items-center h-6 px-1.5 rounded-lg bg-white/[0.04] text-white/35 hover:text-white/60 hover:bg-white/[0.07] transition-colors shrink-0"><ArrowLeftRight size={11} /></button>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              <span className="text-[10px] font-mono font-bold" style={{ color: groupColor }}>{ex.sets} × {ex.reps}</span>
+                              {ex.rest_sec != null && ex.rest_sec > 0
+                                ? <span className="flex items-center gap-1 text-[10px] text-white/35"><Clock size={9} />{ex.rest_sec}s avant suivant</span>
+                                : exIdx < currentGroup.length - 1
+                                  ? <span className="text-[10px] text-white/25 italic">→ Enchaîner directement</span>
+                                  : null
+                              }
+                              {exEffectiveRir !== null && exEffectiveRir !== undefined && <span className="text-[10px] text-white/35">RIR cible <span className="text-white/60 font-semibold">{exEffectiveRir}</span></span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Rounds */}
+                {Array.from({ length: numRounds }, (_, roundIdx) => {
+                  const roundNum = roundIdx + 1
+                  const roundSets = currentGroup.flatMap(ex =>
+                    sets.filter(s => s.exercise_id === ex.id && s.set_number === roundNum)
+                  )
+                  const roundDone = roundSets.length > 0 && roundSets.every(s => s.completed)
+
+                  return (
+                    <div key={roundIdx} className="border rounded-2xl overflow-hidden" style={{ borderColor: roundDone ? `${groupColor}40` : `${groupColor}18`, backgroundColor: roundDone ? `${groupColor}04` : 'transparent' }}>
+                      {/* Sets de chaque exercice dans ce round — pas de header texte */}
+                      {currentGroup.map((ex, exInGroupIdx) => {
+                        const exSetsForRound = sets.filter(s => s.exercise_id === ex.id && s.set_number === roundNum)
+                        const exLastPerf = lastPerformance[ex.name] ?? []
+                        const exEffectiveRir = ex.target_rir ?? ex.rir
+                        const isLastExInGroup = exInGroupIdx === currentGroup.length - 1
+                        // Timer : déclenché après validation du set de cet exercice dans ce round
+                        const restSecForToggle = ex.rest_sec ?? null
+
+                        function getExLastPerfLabel(side: 'left' | 'right' | 'bilateral') {
+                          if (exLastPerf.length === 0) return null
+                          const match = exLastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
+                          return match ?? exLastPerf[0]
+                        }
+
+                        const exCode = `${supersetLetter}${exInGroupIdx + 1}`
+                        return (
+                          <div key={ex.id} className={exInGroupIdx > 0 ? 'border-t' : ''} style={exInGroupIdx > 0 ? { borderColor: `${groupColor}15` } : {}}>
+                            {/* Nom exercice dans le tour */}
+                            <div className="px-4 pt-2.5 pb-1 flex items-center gap-2">
+                              <span className="text-[9px] font-black w-6 h-5 rounded flex items-center justify-center shrink-0 tabular-nums" style={{ backgroundColor: `${groupColor}18`, color: groupColor }}>{exCode}</span>
+                              <p className="text-[11px] font-semibold text-white/70 leading-snug">{swappedNames[ex.id] ?? ex.name}</p>
+                              {/* Séparateur repos entre exercices du superset */}
+                              {!isLastExInGroup && (
+                                ex.rest_sec != null && ex.rest_sec > 0
+                                  ? <span className="ml-auto flex items-center gap-1 text-[9px] text-white/30 shrink-0"><Clock size={8} />{ex.rest_sec}s</span>
+                                  : <span className="ml-auto text-[9px] text-white/20 italic shrink-0">→</span>
+                              )}
+                              {isLastExInGroup && ex.rest_sec != null && ex.rest_sec > 0 && roundIdx < numRounds - 1 && (
+                                <span className="ml-auto flex items-center gap-1 text-[9px] shrink-0" style={{ color: `${groupColor}99` }}><Clock size={8} />{ex.rest_sec}s repos</span>
+                              )}
+                            </div>
+
+                            {/* Header colonnes */}
+                            <div className="grid items-center px-4 pb-1 text-[9px] font-bold uppercase tracking-[0.14em] text-white/25" style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1.8fr 1.8fr 1.5fr 1fr' : '1.8fr 1.8fr 1.5fr 1fr' }}>
+                              {ex.is_unilateral && <div>{t('logger.set')}</div>}
+                              <div>{t('logger.actual.label')}</div>
+                              <div>Kg</div>
+                              <div>{t('logger.rir.label')}</div>
+                              <div className="text-center">✓</div>
+                            </div>
+
+                            {/* Sets (bilatéral ou unilatéral) */}
+                            {exSetsForRound.map((s) => {
+                              const lastP = getExLastPerfLabel(s.side)
+                              const key = recKey(ex.id, s.set_number, s.side)
+                              const isRec = !!recommendations[key] && !s.completed
+
+                              return (
+                                <div key={`${s.set_number}-${s.side}`} className={`grid items-center gap-2 px-4 pb-3 pt-1 transition-all duration-200 ${s.completed ? 'bg-[#1f8a65]/[0.06]' : ''}`} style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1.8fr 1.8fr 1.5fr 1fr' : '1.8fr 1.8fr 1.5fr 1fr' }}>
+                                  {ex.is_unilateral && (
+                                    <div className={`text-[11px] font-bold ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>
+                                  )}
+                                  {/* Reps */}
+                                  <input type="number" inputMode="numeric" min={0} value={s.actual_reps}
+                                    onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                                    onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next }); updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value }) }}
+                                    placeholder={lastP?.reps ? String(lastP.reps) : s.planned_reps || '—'}
+                                    className={`h-10 rounded-xl px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#1f8a65]/40 ${isRec ? 'bg-[#1f8a65]/[0.06] border border-[#1f8a65]/30 text-[#1f8a65]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
+                                  {/* Kg */}
+                                  <input type="number" inputMode="decimal" min={0} step={0.5} value={s.actual_weight_kg}
+                                    onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                                    onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next }); updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value }) }}
+                                    placeholder={lastP?.weight ? String(lastP.weight) : '—'}
+                                    className={`h-10 rounded-xl px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#1f8a65]/40 ${isRec ? 'bg-[#1f8a65]/[0.06] border border-[#1f8a65]/30 text-[#1f8a65]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
+                                  {/* RIR */}
+                                  <input type="number" inputMode="numeric" min={0} max={10} value={s.rir_actual}
+                                    onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                                    onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
+                                    placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
+                                    className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 w-full placeholder:text-white/20 transition-colors" />
+                                  {/* Valider */}
+                                  <button onClick={() => toggleSet(ex.id, s.set_number, s.side, restSecForToggle)} className={`flex justify-center items-center h-10 w-10 rounded-xl transition-all duration-200 active:scale-90 ${s.completed ? 'bg-[#1f8a65]/20 shadow-[0_0_12px_rgba(31,138,101,0.3)]' : 'hover:bg-white/[0.06]'}`}>
+                                    {s.completed ? <CheckCircle2 size={22} className="text-[#1f8a65]" /> : <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />}
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })}
                     </div>
                   )
                 })}
-              </div>
 
-              {/* ── Note de ressenti ── */}
-              <div className="border-t border-white/[0.05] px-5 py-3">
-                {showNoteInput === ex.id ? (
-                  <div className="flex flex-col gap-2">
-                    <textarea
-                      autoFocus
-                      rows={3}
-                      value={exerciseNotes[ex.id] ?? ''}
-                      onFocus={() => { activeInputRef.current = true }}
-                      onBlur={() => { activeInputRef.current = false }}
-                      onChange={e => setExerciseNotes(prev => ({ ...prev, [ex.id]: e.target.value }))}
-                      placeholder={t('logger.note.placeholder')}
-                      className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] text-white/80 placeholder:text-white/20 outline-none focus:ring-1 focus:ring-[#1f8a65]/30 focus:border-[#1f8a65]/20 resize-none transition-colors leading-relaxed"
-                    />
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => setShowNoteInput(null)}
-                        className="px-4 py-1.5 rounded-lg text-[11px] font-medium text-white/40 hover:text-white/60 transition-colors"
-                      >
-                        Fermer
-                      </button>
+                {/* Notes superset */}
+                <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-4 py-3">
+                  {showNoteInput === currentGroup[0].id ? (
+                    <div className="flex flex-col gap-2">
+                      <textarea autoFocus rows={3} value={exerciseNotes[currentGroup[0].id] ?? ''} onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }} onChange={e => setExerciseNotes(prev => ({ ...prev, [currentGroup[0].id]: e.target.value }))} placeholder={t('logger.note.placeholder')} className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] text-white/80 placeholder:text-white/20 outline-none focus:ring-1 focus:ring-[#1f8a65]/30 resize-none transition-colors leading-relaxed" />
+                      <div className="flex justify-end"><button onClick={() => setShowNoteInput(null)} className="px-4 py-1.5 rounded-lg text-[11px] font-medium text-white/40 hover:text-white/60 transition-colors">Fermer</button></div>
                     </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowNoteInput(ex.id)}
-                    className="flex items-center gap-2 text-[11px] font-medium text-white/30 hover:text-white/55 transition-colors"
-                  >
-                    <MessageSquare size={13} />
-                    {exerciseNotes[ex.id]
-                      ? <span className="text-white/50 truncate max-w-[260px]">{exerciseNotes[ex.id]}</span>
-                      : 'Ajouter un ressenti'}
-                  </button>
-                )}
+                  ) : (
+                    <button onClick={() => setShowNoteInput(currentGroup[0].id)} className="flex items-center gap-2 text-[11px] font-medium text-white/30 hover:text-white/55 transition-colors">
+                      <MessageSquare size={13} />
+                      {exerciseNotes[currentGroup[0].id] ? <span className="text-white/50 truncate max-w-[260px]">{exerciseNotes[currentGroup[0].id]}</span> : 'Ajouter un ressenti'}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })()
+        )}
 
         {/* ── Groupe suivant ── */}
         {!isLast && (
@@ -1285,7 +1257,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       ) : null}
 
       {/* ── Bouton Terminer (fixe) ── */}
-      <div className="fixed bottom-20 left-0 right-0 px-5 z-40 bg-[#121212] pt-3 pb-2">
+      <div className="fixed bottom-6 left-0 right-0 px-5 z-40">
         <div className="max-w-lg mx-auto">
           {allDone ? (
             /* Séance complète → simple clic, vert proéminent */

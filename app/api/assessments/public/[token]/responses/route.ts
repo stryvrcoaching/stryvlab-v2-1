@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { BulkResponsePayload } from "@/types/assessment";
 import { sendBilanCompletedEmail } from "@/lib/email/mailer";
 import { inngest } from "@/lib/inngest/client";
+import { syncProfileFromResponses } from "@/lib/assessments/sync-profile";
 
 function serviceClient() {
   return createServiceClient(
@@ -23,7 +24,7 @@ export async function POST(
     .from("assessment_submissions")
     .select(
       `
-      id, coach_id, client_id, status, token_expires_at,
+      id, coach_id, client_id, status, token_expires_at, bilan_date,
       template_snapshot,
       client:coach_clients(first_name, last_name)
     `,
@@ -84,27 +85,9 @@ export async function POST(
       .update({ status: "completed", submitted_at: new Date().toISOString() })
       .eq("id", submission.id);
 
-    // Sync profile fields from assessment responses to coach_clients
-    const profileUpdate: Record<string, string> = {};
-    for (const r of body.responses) {
-      if (['date_naissance', 'date_of_birth'].includes(r.field_key) && r.value_text) {
-        profileUpdate['date_of_birth'] = r.value_text;
-      }
-      if (['sexe', 'gender', 'genre'].includes(r.field_key) && r.value_text) {
-        const v = r.value_text.toLowerCase();
-        const mapped = v === 'homme' || v === 'male' || v === 'm' ? 'male'
-          : v === 'femme' || v === 'female' || v === 'f' ? 'female'
-          : v === 'other' || v === 'autre' ? 'other'
-          : null;
-        if (mapped) profileUpdate['gender'] = mapped;
-      }
-    }
-    if (Object.keys(profileUpdate).length > 0) {
-      await db
-        .from('coach_clients')
-        .update(profileUpdate)
-        .eq('id', submission.client_id);
-    }
+    // Sync profile fields (gender, dob, training_goal, fitness_level, injuries)
+    const bilanDate = (submission as any).bilan_date ?? new Date().toISOString().slice(0, 10)
+    await syncProfileFromResponses(db, submission.client_id, submission.coach_id, body.responses as any, bilanDate)
 
     // Notification coach explicite avec nom client + nom bilan
     const client = submission.client as {

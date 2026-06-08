@@ -185,7 +185,7 @@ function formatSign(value: number | null): string {
   return value >= 0 ? `+${value.toFixed(1)}` : `${value.toFixed(1)}`;
 }
 
-function KpiCard({
+function KpiStat({
   label,
   value,
   sub,
@@ -199,19 +199,17 @@ function KpiCard({
   color: string;
 }) {
   return (
-    <div className="bg-[#181818] border-subtle rounded-xl p-4 flex items-start gap-3">
+    <div className="flex items-center gap-2.5 min-w-0">
       <div
-        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0`}
+        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
         style={{ backgroundColor: `${color}18` }}
       >
-        <Icon size={16} style={{ color }} />
+        <Icon size={13} style={{ color }} />
       </div>
-      <div>
-        <p className="text-[10px] font-bold text-white/45 uppercase tracking-wider">
-          {label}
-        </p>
-        <p className="text-xl font-bold text-white font-mono mt-0.5">{value}</p>
-        {sub && <p className="text-[10px] text-white/45 mt-0.5">{sub}</p>}
+      <div className="min-w-0">
+        <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider truncate">{label}</p>
+        <p className="text-[13px] font-bold text-white font-mono leading-tight">{value}</p>
+        {sub && <p className="text-[9px] text-white/35 truncate">{sub}</p>}
       </div>
     </div>
   );
@@ -549,54 +547,24 @@ export default function PerformanceDashboard({
         </div>
       ) : (
         <>
-          {/* ── KPIs ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            <KpiCard
-              label="Séances"
-              value={String(kpis.totalSessions)}
-              sub={`${kpis.completedSessions} complétées`}
-              icon={Dumbbell}
-              color="#6366f1"
-            />
-            <KpiCard
-              label="Volume total"
-              value={formatVolume(kpis.totalVolume)}
-              sub="kg soulevés"
-              icon={TrendingUp}
-              color="#10b981"
-            />
-            <KpiCard
-              label="Sets complétés"
-              value={String(kpis.totalSets)}
-              icon={Target}
-              color="#f59e0b"
-            />
-            <KpiCard
-              label="Répétitions"
-              value={kpis.totalReps.toLocaleString("fr-FR")}
-              icon={Activity}
-              color="#3b82f6"
-            />
-            <KpiCard
-              label="Durée moy."
-              value={kpis.avgDuration ? `${kpis.avgDuration} min` : "—"}
-              icon={Clock}
-              color="#ec4899"
-            />
-            <KpiCard
-              label="Intensité"
-              value={
-                rpeTrend.length
-                  ? `RPE ${(rpeTrend.reduce((a, r) => a + r.avgRpe, 0) / rpeTrend.length).toFixed(1)}`
-                  : "—"
-              }
-              sub="moyenne"
-              icon={Zap}
-              color="#f97316"
-            />
+          {/* ── KPIs strip ── */}
+          <div className="bg-[#181818] border-subtle rounded-xl px-4 py-3 flex items-center gap-0 flex-wrap">
+            {[
+              { label: "Séances", value: String(kpis.totalSessions), sub: `${kpis.completedSessions} complétées`, icon: Dumbbell, color: "#6366f1" },
+              { label: "Volume", value: formatVolume(kpis.totalVolume), sub: "kg soulevés", icon: TrendingUp, color: "#10b981" },
+              { label: "Sets", value: String(kpis.totalSets), icon: Target, color: "#f59e0b" },
+              { label: "Reps", value: kpis.totalReps.toLocaleString("fr-FR"), icon: Activity, color: "#3b82f6" },
+              { label: "Durée moy.", value: kpis.avgDuration ? `${kpis.avgDuration} min` : "—", icon: Clock, color: "#ec4899" },
+              { label: "Intensité", value: rpeTrend.length ? `RPE ${(rpeTrend.reduce((a, r) => a + r.avgRpe, 0) / rpeTrend.length).toFixed(1)}` : "—", sub: "moyenne", icon: Zap, color: "#f97316" },
+            ].map((stat, i, arr) => (
+              <div key={stat.label} className="flex items-center">
+                <KpiStat {...stat} />
+                {i < arr.length - 1 && <div className="w-px h-8 bg-white/[0.06] mx-4 shrink-0" />}
+              </div>
+            ))}
           </div>
 
-          <div className="bg-[#181818] border-subtle rounded-xl p-5 space-y-3">
+          {hasNutritionData && <div className="bg-[#181818] border-subtle rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.24em] text-white/40">
@@ -673,7 +641,7 @@ export default function PerformanceDashboard({
                 </p>
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* ── Volume / Reps / Sets Timeline ── */}
           <div className="bg-[#181818] border-subtle rounded-xl p-5">
@@ -687,7 +655,7 @@ export default function PerformanceDashboard({
                 </p>
               </div>
             </div>
-            {timeline.length > 0 ? (
+            {timeline.length >= 2 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart
                   data={timeline}
@@ -748,9 +716,10 @@ export default function PerformanceDashboard({
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-xs text-white/45 text-center py-10">
-                Pas assez de données
-              </p>
+              <div className="flex flex-col items-center justify-center py-10 gap-2">
+                <p className="text-xs text-white/45 text-center">Pas assez de données pour afficher la courbe</p>
+                <p className="text-[10px] text-white/25 text-center">Minimum 2 séances sur la période sélectionnée</p>
+              </div>
             )}
           </div>
 
@@ -764,7 +733,7 @@ export default function PerformanceDashboard({
               <p className="text-xs text-white/45 mb-4">
                 Score normalisé par groupe (0–100)
               </p>
-              {radarData.length > 0 ? (
+              {radarData.length >= 3 ? (
                 <ResponsiveContainer width="100%" height={260}>
                   <RadarChart
                     data={radarData}
@@ -802,9 +771,10 @@ export default function PerformanceDashboard({
                   </RadarChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-xs text-white/45 text-center py-10">
-                  Pas assez de données
-                </p>
+                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                  <p className="text-xs text-white/45 text-center">Pas assez de groupes musculaires</p>
+                  <p className="text-[10px] text-white/25 text-center">Minimum 3 groupes requis pour le radar</p>
+                </div>
               )}
             </div>
 
@@ -945,9 +915,23 @@ export default function PerformanceDashboard({
                 <h3 className="font-bold text-white text-sm">
                   Progression par exercice
                 </h3>
-                <p className="text-xs text-white/45 mt-0.5">
-                  Évolution du poids max par séance
-                </p>
+                {(() => {
+                  if (!selectedEx || selectedEx.sessions.length < 2) {
+                    return <p className="text-xs text-white/45 mt-0.5">Évolution du poids max par séance</p>;
+                  }
+                  const first = selectedEx.sessions[0].maxWeight;
+                  const last = selectedEx.sessions[selectedEx.sessions.length - 1].maxWeight;
+                  const delta = last - first;
+                  const sign = delta >= 0 ? "+" : "";
+                  return (
+                    <p className="text-xs mt-0.5">
+                      <span className="text-white/45">{first} kg → {last} kg · </span>
+                      <span className={delta >= 0 ? "text-accent font-bold" : "text-red-400 font-bold"}>
+                        {sign}{delta.toFixed(1)} kg
+                      </span>
+                    </p>
+                  );
+                })()}
               </div>
               {exercises.length > 0 && (
                 <div className="relative">
@@ -969,7 +953,7 @@ export default function PerformanceDashboard({
                 </div>
               )}
             </div>
-            {selectedEx && selectedEx.sessions.length > 0 ? (
+            {selectedEx && selectedEx.sessions.length >= 2 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart
                   data={selectedEx.sessions}
@@ -1015,9 +999,10 @@ export default function PerformanceDashboard({
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-xs text-white/45 text-center py-8">
-                Sélectionne un exercice
-              </p>
+              <div className="flex flex-col items-center justify-center py-10 gap-2">
+                <p className="text-xs text-white/45 text-center">Pas assez de données de progression</p>
+                <p className="text-[10px] text-white/25 text-center">Active la double progression sur un programme et attends la première séance complétée.</p>
+              </div>
             )}
           </div>
         </>

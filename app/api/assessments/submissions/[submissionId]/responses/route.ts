@@ -3,6 +3,7 @@ import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { BulkResponsePayload } from '@/types/assessment'
 import { inngest } from '@/lib/inngest/client'
+import { syncProfileFromResponses } from '@/lib/assessments/sync-profile'
 
 function serviceClient() {
   return createServiceClient(
@@ -28,7 +29,7 @@ export async function POST(
   // Vérifier ownership
   const { data: submission } = await db
     .from('assessment_submissions')
-    .select('id, client_id, status')
+    .select('id, client_id, coach_id, status, bilan_date')
     .eq('id', params.submissionId)
     .eq('coach_id', user.id)
     .single()
@@ -68,27 +69,9 @@ export async function POST(
       .update({ status: 'completed', submitted_at: new Date().toISOString() })
       .eq('id', params.submissionId)
 
-    // Sync profile fields from assessment responses to coach_clients
-    const profileUpdate: Record<string, string> = {};
-    for (const r of body.responses) {
-      if (['date_naissance', 'date_of_birth'].includes(r.field_key) && r.value_text) {
-        profileUpdate['date_of_birth'] = r.value_text;
-      }
-      if (['sexe', 'gender', 'genre'].includes(r.field_key) && r.value_text) {
-        const v = r.value_text.toLowerCase();
-        const mapped = v === 'homme' || v === 'male' || v === 'm' ? 'male'
-          : v === 'femme' || v === 'female' || v === 'f' ? 'female'
-          : v === 'other' || v === 'autre' ? 'other'
-          : null;
-        if (mapped) profileUpdate['gender'] = mapped;
-      }
-    }
-    if (Object.keys(profileUpdate).length > 0) {
-      await db
-        .from('coach_clients')
-        .update(profileUpdate)
-        .eq('id', submission.client_id);
-    }
+    // Sync profile fields (gender, dob, training_goal, fitness_level, injuries)
+    const bilanDate = submission.bilan_date ?? new Date().toISOString().slice(0, 10)
+    await syncProfileFromResponses(db, submission.client_id, user.id, body.responses as any, bilanDate)
 
     await db.from('client_notifications').insert({
       coach_id:      user.id,

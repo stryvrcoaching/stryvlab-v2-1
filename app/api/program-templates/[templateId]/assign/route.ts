@@ -4,6 +4,16 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { insertClientNotification } from "@/lib/notifications/insert-client-notification";
 import { parseRepsRange } from "@/lib/progression/double-progression";
 
+// Déduit le palier de charge depuis le type d'équipement si non configuré par le coach
+function inferWeightIncrement(equipment: string[]): number {
+  const eq = (equipment ?? []).map(e => e.toLowerCase())
+  if (eq.some(e => e.includes('machine') || e.includes('poulie') || e.includes('cable') || e.includes('pec') || e.includes('leg'))) return 5
+  if (eq.some(e => e.includes('haltere') || e.includes('dumbbell') || e.includes('kettlebell'))) return 2
+  if (eq.some(e => e.includes('barre') || e.includes('barbell') || e.includes('smith'))) return 2.5
+  if (eq.some(e => e.includes('bodyweight') || e.includes('poids de corps') || e.includes('elastique'))) return 0
+  return 2.5 // défaut universel
+}
+
 function service() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,7 +51,8 @@ export async function POST(
         id, name, day_of_week, days_of_week, position, notes,
         coach_program_template_exercises (
           name, sets, reps, rest_sec, rir, notes, position, image_url,
-          primary_muscles, secondary_muscles, movement_pattern, equipment_required, group_id
+          primary_muscles, secondary_muscles, movement_pattern, equipment_required, group_id,
+          weight_increment_kg
         )
       )
     `,
@@ -144,7 +155,9 @@ export async function POST(
               rep_min: parsed?.rep_min ?? null,
               rep_max: parsed?.rep_max ?? null,
               target_rir: e.rir ?? null,
-              weight_increment_kg: 2.5,
+              weight_increment_kg: e.weight_increment_kg != null
+                ? Number(e.weight_increment_kg)
+                : inferWeightIncrement(e.equipment_required ?? []),
             };
           }),
       );

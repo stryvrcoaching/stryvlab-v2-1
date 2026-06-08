@@ -11,15 +11,23 @@ function service() {
 
 // Heuristique : détecte le groupe musculaire depuis le nom de l'exercice
 function inferMuscleGroup(name: string): string {
-  const n = name.toLowerCase()
-  if (/squat|leg press|leg curl|leg ext|lunge|hack|rdl|deadlift|hip thrust|glute/.test(n)) return 'Jambes'
-  if (/bench|chest|pec|fly|push.up|dips/.test(n)) return 'Pectoraux'
-  if (/pull.up|chin|lat|row|cable row|seated row|t.bar/.test(n)) return 'Dos'
-  if (/shoulder|press|lateral|rear delt|face pull|upright/.test(n)) return 'Épaules'
-  if (/curl|bicep|hammer/.test(n)) return 'Biceps'
-  if (/tricep|skullcrusher|extension|dip/.test(n)) return 'Triceps'
-  if (/crunch|plank|ab|core|oblique/.test(n)) return 'Abdos'
-  if (/calf|mollet/.test(n)) return 'Mollets'
+  const n = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  // Jambes (avant pectoraux car "leg press" contient "press")
+  if (/squat|leg press|leg curl|leg ext|lunge|hack|rdl|deadlift|hip thrust|glute|presse a cuisses|fente|soulevé de terre/.test(n)) return 'Jambes'
+  // Pectoraux — développé couché/incliné, écarté, chest fly
+  if (/bench|chest|pec|fly|push[\s-]up|developpe couche|developpe incline|developpe halteres|ecarte|dips pecto/.test(n)) return 'Pectoraux'
+  // Dos — tirage, rowing, tractions
+  if (/pull[\s-]up|chin[\s-]up|\blat\b|\brow\b|cable[\s-]row|seated[\s-]row|t[\s-]bar|tirage|rowing|traction|grand dorsal/.test(n)) return 'Dos'
+  // Épaules — élévation, oiseau, développé militaire, face pull
+  if (/shoulder|military|elevation laterale|elevation frontale|oiseau|developpe militaire|face pull|upright|rear delt|lateral raise/.test(n)) return 'Épaules'
+  // Biceps — curl, marteau (avant triceps car "curl" > "extension")
+  if (/\bcurl\b|bicep|hammer|marteau|drag curl|waiter curl/.test(n)) return 'Biceps'
+  // Triceps — extension, skullcrusher, kickback, dips triceps, développé couché prise serrée
+  if (/tricep|skullcrusher|extension|kickback|dips tricep|prise serree|close.grip/.test(n)) return 'Triceps'
+  // Pectoraux — développé couché prise serrée smith → Triceps déjà capturé, mais "développé" sans contexte → Pectoraux
+  if (/developpe/.test(n)) return 'Pectoraux'
+  if (/crunch|plank|ab|core|oblique|gainage/.test(n)) return 'Abdos'
+  if (/calf|mollet|raise/.test(n)) return 'Mollets'
   return 'Autre'
 }
 

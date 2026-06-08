@@ -1,11 +1,27 @@
 "use client";
 
-import { ReactNode, memo, useEffect, useState } from "react";
+import { ReactNode, memo, useEffect, useState, createContext, useContext } from "react";
 import { TopBarProvider, useTopBarContent } from "@/components/layout/TopBarContext";
 import { DockProvider } from "@/components/layout/DockContext";
 import { NavDock } from "@/components/layout/NavDock";
 import NotificationBell from "@/components/layout/NotificationBell";
 import { createClient } from "@/utils/supabase/client";
+
+// ─── FULLSCREEN PAGE CONTEXT ──────────────────────────────────────────────────
+// Pages that need h-screen layout (e.g. program builder) call useSetFullscreenPage(true)
+
+const FullscreenPageContext = createContext<{
+  fullscreen: boolean
+  setFullscreen: (v: boolean) => void
+}>({ fullscreen: false, setFullscreen: () => {} })
+
+export function useSetFullscreenPage(active: boolean) {
+  const { setFullscreen } = useContext(FullscreenPageContext)
+  useEffect(() => {
+    setFullscreen(active)
+    return () => setFullscreen(false)
+  }, [active, setFullscreen])
+}
 
 // ─── TOPBAR ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +51,17 @@ function TopBar({ firstName }: { firstName: string | null }) {
 // This prevents setTopBar calls from re-rendering the page subtree.
 
 const PageContent = memo(function PageContent({ children }: { children: ReactNode }) {
+  const { fullscreen } = useContext(FullscreenPageContext)
+  if (fullscreen) {
+    // h-screen, TopBar fixe en top-4 occupe 88px → contenu commence à 88px
+    return (
+      <div className="h-screen bg-[#121212] pt-[88px] overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-0 h-full">
+          {children}
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-[#121212] pt-[88px] pb-[138px]">
       {children}
@@ -46,6 +73,7 @@ const PageContent = memo(function PageContent({ children }: { children: ReactNod
 
 function ShellInner({ children }: { children: ReactNode }) {
   const [firstName, setFirstName] = useState<string | null>(null)
+  const [fullscreen, setFullscreen] = useState(false)
 
   useEffect(() => {
     createClient().auth.getUser().then(({ data: { user } }) => {
@@ -55,12 +83,14 @@ function ShellInner({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#121212]">
-      <TopBar firstName={firstName} />
-      {/* pt = top-4(16) + h-14(56) + gap-4(16) = 88px | pb = bottom-6(24) + rowB h-14(56) + rowA h-9(36) + gap-1.5(6) + gap(16) = 138px */}
-      <PageContent>{children}</PageContent>
-      <NavDock />
-    </div>
+    <FullscreenPageContext.Provider value={{ fullscreen, setFullscreen }}>
+      <div className={fullscreen ? 'h-screen overflow-hidden bg-[#121212]' : 'min-h-screen bg-[#121212]'}>
+        <TopBar firstName={firstName} />
+        {/* pt = top-4(16) + h-14(56) + gap-4(16) = 88px | pb = bottom-6(24) + rowB h-14(56) + rowA h-9(36) + gap-1.5(6) + gap(16) = 138px */}
+        <PageContent>{children}</PageContent>
+        {!fullscreen && <NavDock />}
+      </div>
+    </FullscreenPageContext.Provider>
   );
 }
 

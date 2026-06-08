@@ -142,6 +142,35 @@
 }
 
 @layer components {
+  /* ── Range slider natif DS v2.0 ──────────────────────── */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 9999px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: #ffffff;
+    cursor: pointer;
+    border: 2px solid #1f8a65;
+    box-shadow: 0 0 0 3px rgba(31, 138, 101, 0.2);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: #ffffff;
+    cursor: pointer;
+    border: 2px solid #1f8a65;
+    box-shadow: 0 0 0 3px rgba(31, 138, 101, 0.2);
+  }
+
   /* ── Inputs natifs (pas shadcn) ──────────────────────── */
   .field-input {
     @apply w-full rounded-xl bg-[#0a0a0a] px-4 h-[52px] text-[14px] font-medium text-white placeholder:text-white/20 outline-none transition-all duration-200;

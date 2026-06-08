@@ -7,7 +7,7 @@ import {
   Flame, ChevronRight, Trophy, TrendingUp, Zap,
 } from 'lucide-react'
 import BodyMap from '@/components/client/BodyMap'
-import { detectMuscleGroups } from '@/lib/client/muscleDetection'
+import { computeMuscleIntensity } from '@/lib/client/muscleDetection'
 import ExerciseListDisclosure from '@/components/client/ExerciseListDisclosure'
 import ClientTopBar from '@/components/client/ClientTopBar'
 import { useClientT } from '@/components/client/ClientI18nProvider'
@@ -112,11 +112,16 @@ export default function ProgrammeClientPage({
     [todaySession]
   )
 
-  const { primary: primaryGroups, secondary: secondaryGroups } = useMemo(() =>
-    detectMuscleGroups(todayExercises.map((e: any) => ({
+  const muscleIntensityMap = useMemo(() =>
+    computeMuscleIntensity(todayExercises.map((e: any) => ({
       name: e.name,
+      sets: e.sets ?? 3,
       primary_muscles: e.primary_muscles ?? [],
       secondary_muscles: e.secondary_muscles ?? [],
+      primary_muscle: e.primary_muscle ?? null,
+      primary_activation: e.primary_activation ?? null,
+      secondary_muscles_detail: e.secondary_muscles_detail ?? [],
+      secondary_activations: e.secondary_activations ?? [],
     }))),
     [todayExercises]
   )
@@ -244,7 +249,7 @@ export default function ProgrammeClientPage({
 
                 {/* BodyMap */}
                 <div className="px-5 py-4 flex justify-center border-t border-b border-white/[0.04]">
-                  <BodyMap primaryGroups={primaryGroups} secondaryGroups={secondaryGroups} />
+                  <BodyMap intensityMap={muscleIntensityMap} />
                 </div>
 
                 {/* Stats pills */}

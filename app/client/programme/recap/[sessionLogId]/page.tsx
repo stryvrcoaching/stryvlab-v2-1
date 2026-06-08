@@ -4,7 +4,7 @@ import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { notFound, redirect } from 'next/navigation'
 import { CheckCircle2, Clock, Layers, BarChart2, ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import BodyMap from '@/components/client/BodyMap'
-import { detectMuscleGroups } from '@/lib/client/muscleDetection'
+import { computeMuscleIntensity } from '@/lib/client/muscleDetection'
 import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
 import RecapNavButtons from './RecapNavButtons'
 
@@ -71,19 +71,24 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
 
   // ── Schéma corporel — utilise les muscles persistés dans les set_logs (option B) ──
   // Agrège les muscles uniques de tous les sets complétés (dédupliqués par exercice)
-  const seenExercises = new Set<string>()
-  const muscleInputs: { name: string; primary_muscles: string[]; secondary_muscles: string[] }[] = []
+  // Agrège par exercice — chaque set a un nombre de reps mais on veut des sets distincts
+  const exerciseSetCounts = new Map<string, number>()
+  const exerciseMuscles = new Map<string, { primary_muscles: string[]; secondary_muscles: string[] }>()
   for (const s of completedSets) {
-    if (!seenExercises.has(s.exercise_name)) {
-      seenExercises.add(s.exercise_name)
-      muscleInputs.push({
-        name: s.exercise_name,
+    exerciseSetCounts.set(s.exercise_name, (exerciseSetCounts.get(s.exercise_name) ?? 0) + 1)
+    if (!exerciseMuscles.has(s.exercise_name)) {
+      exerciseMuscles.set(s.exercise_name, {
         primary_muscles: (s as any).primary_muscles ?? [],
         secondary_muscles: (s as any).secondary_muscles ?? [],
       })
     }
   }
-  const { primary: primaryGroups, secondary: secondaryGroups } = detectMuscleGroups(muscleInputs)
+  const muscleInputs = Array.from(exerciseSetCounts.entries()).map(([name, sets]) => ({
+    name,
+    sets,
+    ...(exerciseMuscles.get(name) ?? { primary_muscles: [], secondary_muscles: [] }),
+  }))
+  const muscleIntensityMap = computeMuscleIntensity(muscleInputs)
 
   // ── Comparaison dernière séance du même nom ──
   const { data: prevLogs } = await service
@@ -182,7 +187,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
         {/* ── Schéma corporel ── */}
         <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-5 py-5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-4">Muscles sollicités</p>
-          <BodyMap primaryGroups={primaryGroups} secondaryGroups={secondaryGroups} />
+          <BodyMap intensityMap={muscleIntensityMap} />
         </div>
 
         {/* ── Analyse par exercice ── */}

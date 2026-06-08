@@ -16,6 +16,7 @@ const AUTH_PATHS = [
   '/client/onboarding',
   '/client/checkin/onboarding',
   '/client/acces-suspendu',
+  '/client/programme/session/',
 ]
 
 interface Props {

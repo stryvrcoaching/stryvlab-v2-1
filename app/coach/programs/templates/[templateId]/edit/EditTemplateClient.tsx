@@ -31,7 +31,7 @@ export default function EditTemplateClient({ template, templateId }: Props) {
   ), [router, template?.name])
 
   return (
-    <div className="bg-[#121212] font-sans">
+    <div className="h-full bg-[#121212] font-sans">
       <ProgramTemplateBuilder
         initial={template}
         templateId={templateId}

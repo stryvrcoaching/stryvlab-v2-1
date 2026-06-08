@@ -726,7 +726,10 @@ export function scoreCompleteness(
   )
 
   // Expand profile equipment to cover both 'poulie' and 'cables' aliases
-  const profileEquipmentSet = profile ? expandProfileEquipment(profile.equipment) : new Set<string>()
+  // bodyweight is always available — no equipment required, everyone has it
+  const profileEquipmentSet = profile
+    ? expandProfileEquipment([...profile.equipment, 'bodyweight'])
+    : new Set<string>()
 
   // Filter out patterns that can't be done with available equipment
   const effectiveRequired = profile && profile.equipment.length > 0

@@ -73,6 +73,7 @@ export interface ExerciseData {
   reps: string
   rest_sec: number | null
   rir: number | null
+  weight_increment_kg: number | null
   notes: string
   image_url: string | null
   movement_pattern: string | null
@@ -94,6 +95,8 @@ interface Props {
   alerts: IntelligenceAlert[]
   templateId?: string
   supersetGroupColor?: string
+  groupSize?: number
+  nextInSameGroup?: boolean
   onUpdate: (patch: Partial<ExerciseData>) => void
   onRemove: () => void
   onImageUpload: (file: File) => void
@@ -124,6 +127,8 @@ export default function ExerciseCard({
   alerts,
   templateId,
   supersetGroupColor,
+  groupSize = 2,
+  nextInSameGroup = false,
   onUpdate,
   onRemove,
   onImageUpload,
@@ -178,15 +183,15 @@ export default function ExerciseCard({
           : 'border-white/[0.06]',
       ].join(' ')}
     >
-      {/* Superset badge */}
+      {/* Superset / Triset / Giant Set badge */}
       {isInSuperset && (
         <div
-          className="flex items-center gap-1.5 px-3 py-1 border-b-[0.3px] border-white/[0.04]"
+          className="flex items-center gap-1.5 px-3 py-1 border-b-[0.3px]"
           style={{ borderBottomColor: `${supersetGroupColor}20` }}
         >
           <Link2 size={9} style={{ color: supersetGroupColor ?? '#f59e0b' }} />
           <span className="text-[9px] font-semibold" style={{ color: supersetGroupColor ?? '#f59e0b' }}>
-            SUPERSET
+            {groupSize === 2 ? 'SUPERSET' : groupSize === 3 ? 'TRISET' : 'SÉRIE GÉANTE'}
           </span>
         </div>
       )}
@@ -278,7 +283,13 @@ export default function ExerciseCard({
               {onToggleSuperset && (
                 <button
                   onClick={onToggleSuperset}
-                  title={isInSuperset ? 'Retirer du superset' : 'Grouper en superset avec l\'exercice suivant'}
+                  title={
+                    isInSuperset
+                      ? nextInSameGroup
+                        ? 'Retirer du groupe'
+                        : 'Étendre le groupe vers l\'exercice suivant'
+                      : 'Grouper avec l\'exercice suivant'
+                  }
                   className={[
                     'shrink-0 p-1 rounded-md transition-colors',
                     isInSuperset
@@ -365,6 +376,28 @@ export default function ExerciseCard({
                   />
                 </div>
               ))}
+            </div>
+
+            {/* Palier de surcharge progressive */}
+            <div className="flex items-start gap-2">
+              <div className="min-w-0" style={{ width: '25%' }}>
+                <label className="block text-[9px] text-white/30 mb-0.5 truncate">+kg / overload</label>
+                <input
+                  type="number"
+                  step={0.5}
+                  min={0}
+                  value={exercise.weight_increment_kg != null ? String(exercise.weight_increment_kg) : ''}
+                  onChange={e => {
+                    const v = e.target.value
+                    onUpdate({ weight_increment_kg: v ? Number(v) : null })
+                  }}
+                  placeholder="2.5"
+                  className="w-full bg-[#0a0a0a] rounded-md border-[0.3px] border-white/[0.06] text-[11px] text-white/80 px-1.5 py-1 outline-none font-mono"
+                />
+              </div>
+              <p className="text-[9px] text-white/20 leading-relaxed mt-4 flex-1">
+                Charge ajoutée quand rep_max atteint sur tous les sets
+              </p>
             </div>
 
             {/* Notes */}

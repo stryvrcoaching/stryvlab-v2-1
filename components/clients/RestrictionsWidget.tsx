@@ -37,15 +37,14 @@ const SEVERITY_CONFIG = {
 }
 
 const EQUIPMENT_OPTIONS = [
-  { slug: 'barre',      label: 'Barre' },
-  { slug: 'halteres',   label: 'Haltères' },
-  { slug: 'machine',    label: 'Machine' },
-  { slug: 'cables',     label: 'Câbles' },
-  { slug: 'kettlebell', label: 'Kettlebell' },
-  { slug: 'smith',      label: 'Smith machine' },
-  { slug: 'trx',        label: 'TRX / Suspension' },
-  { slug: 'elastiques', label: 'Élastiques' },
-  { slug: 'poulie',     label: 'Poulie haute' },
+  { slug: 'barre',       label: 'Barre' },
+  { slug: 'halteres',    label: 'Haltères' },
+  { slug: 'machine',     label: 'Machine' },
+  { slug: 'poulie',      label: 'Poulie / Câbles' },
+  { slug: 'kettlebell',  label: 'Kettlebell' },
+  { slug: 'smith',       label: 'Smith machine' },
+  { slug: 'trx',         label: 'TRX / Suspension' },
+  { slug: 'elastiques',  label: 'Élastiques' },
 ]
 
 interface Props {
@@ -136,9 +135,12 @@ export default function RestrictionsWidget({ clientId, section = 'all' }: Props)
   }
 
   async function handleEquipmentToggle(slug: string) {
-    const next = equipment.includes(slug)
-      ? equipment.filter(e => e !== slug)
-      : [...equipment, slug]
+    // poulie and cables are aliases in the scoring engine — keep them in sync
+    const aliases: Record<string, string> = { poulie: 'cables', cables: 'poulie' }
+    const active = equipment.includes(slug)
+    let next = active
+      ? equipment.filter(e => e !== slug && e !== (aliases[slug] ?? ''))
+      : [...equipment.filter(e => e !== (aliases[slug] ?? '')), slug, ...(aliases[slug] ? [aliases[slug]] : [])]
     setEquipment(next)
     await fetch(`/api/clients/${clientId}`, {
       method: 'PATCH',

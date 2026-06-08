@@ -104,7 +104,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   // On récupère les set_logs de la dernière session_log pour chaque exercice de cette séance
   const exerciseNames = exercises.map((ex: any) => ex.name)
 
-  let lastPerformance: Record<string, { weight: number | null; reps: number | null; rir?: number | null; side?: string | null }[]> = {}
+  let lastPerformance: Record<string, { weight: number | null; reps: number | null; rir?: number | null; side?: string | null; set_number?: number | null }[]> = {}
 
   if (exerciseNames.length > 0) {
     // Dernière session log du client (hors session actuelle en cours)
@@ -131,6 +131,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
             reps: log.actual_reps,
             rir: (log as any).rir_actual ?? null,
             side: log.side,
+            set_number: log.set_number,
           })
         }
       }

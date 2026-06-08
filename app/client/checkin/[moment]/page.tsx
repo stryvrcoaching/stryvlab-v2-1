@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Slider } from "@/components/ui/slider";
 
 const FIELD_META: Record<string, { label: string; min?: number; max?: number; step?: number }> = {
   sleep_duration: { label: "Durée du sommeil (h)", min: 0, max: 14, step: 0.5 },
@@ -34,7 +33,15 @@ export default function ClientCheckinMomentPage() {
       const data = await res.json();
       const current = (data?.moments ?? []).find((m: any) => m.moment === moment);
       setConfigId(data?.config_id ?? "");
-      setFields(current?.fields ?? []);
+      const activeFields: string[] = current?.fields ?? [];
+      setFields(activeFields);
+      // Pre-initialize values to min so slider starts valid, never NaN
+      const defaults: Record<string, number> = {};
+      for (const f of activeFields) {
+        const meta = FIELD_META[f];
+        defaults[f] = meta?.min ?? 1;
+      }
+      setValues(defaults);
       setLoading(false);
     }
     loadToday();
@@ -126,13 +133,25 @@ export default function ClientCheckinMomentPage() {
                 return (
                   <>
                     <label className="text-[13px] text-white/80">{meta.label}</label>
-                    <Slider
+                    <input
+                      type="range"
                       min={meta.min ?? 1}
                       max={meta.max ?? 5}
                       step={meta.step ?? 1}
-                      value={[values[currentField] ?? meta.min ?? 1]}
-                      onValueChange={(next) => update(currentField, Number(next[0]))}
-                      className="w-full"
+                      value={values[currentField] ?? meta.min ?? 1}
+                      onChange={(e) => update(currentField, parseFloat(e.target.value))}
+                      className="w-full h-2 appearance-none rounded-full cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, #1f8a65 0%, #1f8a65 ${
+                          (((values[currentField] ?? meta.min ?? 1) - (meta.min ?? 1)) /
+                            ((meta.max ?? 5) - (meta.min ?? 1))) *
+                          100
+                        }%, rgba(255,255,255,0.1) ${
+                          (((values[currentField] ?? meta.min ?? 1) - (meta.min ?? 1)) /
+                            ((meta.max ?? 5) - (meta.min ?? 1))) *
+                          100
+                        }%, rgba(255,255,255,0.1) 100%)`,
+                      }}
                     />
                     <p className="text-[18px] text-white font-bold">{values[currentField] ?? meta.min ?? 1}</p>
                   </>

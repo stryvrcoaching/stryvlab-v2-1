@@ -5,6 +5,71 @@
 
 ## 2026-05-05
 
+FEATURE: Meal templates coach — migration `20260505_coach_meal_templates.sql`, API coach CRUD `/api/clients/[clientId]/meal-templates`, API client GET `/api/client/meal-templates`
+REFACTOR: `checkin/meals/page.tsx` — refonte complète : bottom sheet non tronquée (flex+overflow-y-auto), min-w-0 sur tous inputs grid, nom par défaut "Repas N", bibliothèque repas types coach, bilan macros journalier, DS v2.0
+REFACTOR: `nutrition/page.tsx` — alignement DS v2.0 : MacroBar linéaire, CTA journal toujours visible, structure TopBar + sections propres
+CHORE: `.claude/rules/ui-design-system.md` — règles anti-régression mobile : bottom sheet, inputs grid, sliders natifs
+FIX: Sliders check-in client — remplace Radix `<Slider>` (bug touch iOS) par `<input type="range">` natif dans `checkin/[moment]/page.tsx` et `checkin/meals/page.tsx`
+FIX: Valeurs check-in initialisées au min à chaque chargement de fields — élimine NaN au premier rendu
+CHORE: CSS global `input[type="range"]` thumb DS v2.0 dans `globals.css`
+
+## 2026-05-05
+
+FIX(entrainement): ProgramTemplateBuilder noFullscreen sur page client — évite conflit useSetFullscreenPage vs h-screen de la page parente ; builder ouvre correctement sans rebond
+FIX(program-builder): colonnes scrollables — h-full propagé via wrappers flex+minHeight:0 ; pages new/edit passent h-full ; PageContent fullscreen ajoute flex-1 min-h-0
+FEATURE(assign): inferWeightIncrement — palier auto à l'assignation selon équipement (machine→5kg, haltères→2kg, barre→2.5kg, bodyweight→0) ; valeur coach conservée si déjà configurée
+FEATURE(program-builder): champ weight_increment_kg par exercice — palier arrondi configurable coach (ExerciseCard UI + interface Exercise + payload save + route API template PATCH/POST/SELECT)
+FEATURE: setRecommendation — double progression complète (Path A) : charge stable + reps+1 vers rep_max, puis charge+increment + retour rep_min au trigger overload ; Path B (intra-session) conservé si pas d'historique
+FIX: setRecommendation — match historique par set_number exact (plus de confusion set 1 vs set 3)
+FIX: setRecommendation — arrondi roundToIncrement(weight_increment_kg) au lieu de roundToHalf (élimine charges impossibles sur machine/barre)
+FIX: SessionLogger — weight_increment_kg, rep_min, rep_max, target_rir passés à recommendNextSet ; weight_increment_kg ajouté à l'interface Exercise
+FIX: lastPerformance — set_number exposé dans fetch page.tsx et type LastPerf
+FIX(bodymap): couverture 100% slugs catalogue — extensor/flexor_digitorum ajoutés ; audit complet confirme 0 primaryMuscle non résolu sur 465 exercices
+FIX(bodymap): MIN_RATIO 0.06→0.04 — deltoïdes et muscles faibles apparaissent ; fuzzyFindInCatalog seuil configurable (0.30 dans computeMuscleIntensity) pour meilleur match singulier/pluriel
+FIX(bodymap): computeMuscleIntensity fallback catalogue complet — si primary_muscle null en DB, lookup fuzzy catalogue pour récupérer secondaryMuscles+Activations réels ; triceps_brachii_lateral/long/medial ajoutés CATALOG_SLUG_MAP
+FIX: SessionLogger — DeltaBadge déplacé sous la ligne ↩ lastPerf (colonne PRÉVU) au lieu de sous l'input kg
+FIX: setRecommendation — blend live/historique 50/50 si reps > 8 (était 70/30, causait régressions aberrantes sur sets légers)
+FIX: setRecommendation — guard prev_set_weight_kg : reco jamais inférieure au poids du set précédent dans la séance
+
+## 2026-05-05
+
+FEATURE(bodymap): intensité musculaire continue par volume pondéré — computeMuscleIntensity() calcule sets×activation par groupe, normalise 0–1, BodyMap interpole opacity 10%→100% selon ratio ; fallback primary/secondary si pas de données biomech ; query program_exercises enrichie (primary_muscle, primary_activation, secondary_activations)
+REFACTOR(bodymap): 4 niveaux d'activation musculaire — primaire (vert plein), secondaire (0.42), stabilisateur (0.14), inactif — BodyMap prop stabilizerGroups ajouté, detectMuscleGroups retourne stabilizers Set, CatalogEntry.stabilizers supporté
+FEATURE(muscles): groupe avant-bras complet — MuscleGroup type + CATALOG_SLUG_MAP (brachioradialis/wrist_flexors/extensors/pronator/supinator) + BodyMap SVG activé (vue frontale + dorsale) + ExercisePicker FIBERS_BY_GROUP + FIBER_LABELS + SEARCH_ALIASES + catalog muscleGroup mis à jour pour 2 exercices
+FIX(program-builder): colonnes scrollables indépendamment — wrappers colonnes passent à display:flex + flexDirection:column + minHeight:0 pour propager h-full aux enfants sans débordement
+FIX(program-builder): double scroll supprimé — useSetFullscreenPage(true) dans ProgramTemplateBuilder active h-screen overflow-hidden sur CoachShell ; NavDock masquée en fullscreen ; builder passe h-full au lieu de h-[calc(100vh-96px)]
+FIX(entrainement): page parente passe en h-screen overflow-hidden quand le builder est actif — supprime le double scroll page+colonnes
+FIX(program-builder): toggleSuperset logique intuitive — ex dans groupe + suivant hors groupe = étendre ; ex dans groupe + suivant dans même groupe = retirer ; tooltip contextuel "Étendre" vs "Retirer"
+FEATURE(program-builder): triset + série géante — toggleSuperset étend un groupe existant vers l'exercice suivant (N exercices, pas limité à 2) ; badge dynamique SUPERSET/TRISET/SÉRIE GÉANTE selon taille du groupe ; prop groupSize passée à ExerciseCard
+FIX(session-logger): BottomNav masquée pendant séance — /client/programme/session/ ajouté aux AUTH_PATHS dans ConditionalClientShell
+FIX(session-logger): bouton Terminer flottant sans rectangle bg-[#121212] — bottom-6, fond transparent
+FIX(session-logger): header colonnes (Réalisé/Kg/RIR/✓) ajouté dans les tours superset — aligné avec le rendu solo
+FIX(session-logger): header glassmorphism supprimé — bg-[#121212] pur, plus de backdrop-blur ni shadow (DS v2.0)
+FIX(session-logger): superset — image fullwidth collapsible identique pour tous les exercices (A1, A2...) via hiddenImages Set par exercice ; suppression header "TOUR N" — hiérarchie visuelle seule (bordure couleur si complété)
+REFACTOR(session-logger): superset — codes A1/A2 standard musculation (lettre=groupe, chiffre=position) ; fond coloré commun sur tout le bloc superset ; suppression label "Superset · N exercices" ; "Tour" supprimé — hiérarchie visuelle seule
+FIX(session-logger): superset — image/GIF exercice visible dans header (premier ex fullwidth collapsible, suivants inline) ; noms non tronqués (leading-snug) ; "Round" → "Tour"
+FEATURE(session-logger): superset round-based UX — affichage par round (Set N de chaque exercice dans l'ordre) au lieu de par exercice ; timer déclenché par exercice selon rest_sec coach ; header exercices + rounds numérotés avec indicateur complété
+FIX(bilan): sync equipment_preference → coach_clients.equipment[] on submit — intelligence profile now receives equipment from bilan; 'Mixte' maps to full gym set (barre/halteres/machine/poulie/cables/kettlebell/smith/trx/elastiques/bodyweight)
+FIX(program-builder): EQUIPMENT_MISMATCH false positives — poulie/cables aliases kept in sync on toggle; bodyweight always considered available in scoring engine (never stored in profile — everyone has it)
+FIX(bilan): sync training_frequency → coach_clients.weekly_frequency on submit (clamped 1–7)
+FIX(bilan): sync primary_goal → coach_clients.training_goal on submit (both coach + public routes)
+FIX(bilan): sync experience_level → coach_clients.fitness_level on submit
+FIX(bilan): sync injuries_active/injuries_history → metric_annotations (event_type=injury) on submit — programme intelligence now sees bilan injuries automatically
+REFACTOR(bilan): extract syncProfileFromResponses helper (lib/assessments/sync-profile.ts) — single source of truth for all bilan→profile field mappings
+
+FIX(performance): inferMuscleGroup FR — ajout développé/tirage/élévation/marteau/drag curl, normalize NFD, ordre priorité Jambes avant Pectoraux
+REFACTOR(session-history): sets affichés sans fond coloré — lignes séparées par border-white/[0.04], typographie tabular-nums, RPE discret
+
+FIX(performance): regex t.bar non-échappé mappait "triceps à la barre" → Dos — corrigé t[\s-]bar + push[\s-]up + pull[\s-]up
+FIX(session-history): comptage sets — dénominateur = sets effectifs (completed || actual_reps != null), plus sets prescrits totaux
+FIX(session-history): sets non complétés masqués dans le détail — seuls les sets réalisés affichés
+REFACTOR(session-history): couleurs DS v2.0 — bg-[#1f8a65]/[0.08] au lieu de bg-green-50/40, bordures border-white/[0.06]
+FEATURE(performance): delta poids max dans header "Progression par exercice" — first → last kg avec couleur vert/rouge
+REFACTOR(performance): KPI grid 2×3 → strip horizontal compact 1 ligne
+REFACTOR(performance): diagnostics nutrition masqués si hasNutritionData=false — supprime le bruit "X kcal Y g"
+REFACTOR(performance): radar masqué si < 3 groupes musculaires — empty state informatif
+REFACTOR(performance): charts timeline/progression masqués si < 2 points — empty states avec messages contextuels
+
 REFACTOR(dashboard): layout simplifié — OrgSummary toujours visible, boutons Kanban/Agenda en toggle sous le résumé, Row 2 "Organisation du jour" placeholder supprimée du SummaryPanel
 FIX(dashboard): OrgSummary câblé dans vue Résumé — affiche événements/Kanban/rappels réels au lieu du placeholder statique
 FIX(dashboard): état vide conditionnel — "Tout est sous contrôle" seulement si 0 alertes critiques

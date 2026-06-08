@@ -117,13 +117,14 @@ const FIBERS_BY_GROUP: Record<string, string[]> = {
   epaules:           ['anterior_deltoid', 'medial_deltoid', 'posterior_deltoid', 'rotator_cuff', 'subscapularis'],
   pectoraux:         ['pectoralis_major', 'pectoralis_major_upper', 'pectoralis_major_lower', 'pectoralis_minor'],
   dos:               ['latissimus_dorsi', 'lats', 'upper_back', 'rhomboids', 'trapezius', 'trapezius_upper', 'trapezius_middle', 'trapezius_lower', 'traps', 'upper_traps', 'spine_erectors'],
-  biceps:            ['biceps_brachii', 'brachialis', 'brachioradialis'],
+  biceps:            ['biceps_brachii', 'brachialis'],
   triceps:           ['triceps_brachii'],
   quadriceps:        ['quadriceps', 'rectus_femoris', 'vastus_lateralis', 'vastus_medialis'],
   'ischio-jambiers': ['hamstrings', 'biceps_femoris', 'semimembranosus', 'semitendinosus'],
   mollets:           ['gastrocnemius', 'soleus'],
   abdos:             ['rectus_abdominis', 'lower_abs', 'obliques', 'transverse_abdominis', 'core', 'core_global'],
   lombaires:         ['spine_erectors'],
+  avant_bras:        ['brachioradialis', 'extensor_carpi_radialis', 'extensor_carpi_ulnaris', 'flexor_carpi_radialis', 'flexor_carpi_ulnaris', 'palmaris_longus', 'pronator_teres', 'supinator', 'wrist_flexors', 'wrist_extensors'],
   adducteurs:        ['adductors'],
   abducteurs:        ['abductors'],
 }
@@ -147,7 +148,12 @@ const FIBER_LABELS: Record<string, string> = {
   anterior_deltoid: 'Deltoïde ant.', medial_deltoid: 'Deltoïde lat.', posterior_deltoid: 'Deltoïde post.',
   rotator_cuff: 'Coiffe rotateurs', subscapularis: 'Subscapulaire',
   // Bras
-  biceps_brachii: 'Biceps', brachialis: 'Brachial ant.', brachioradialis: 'Brachio-radial', triceps_brachii: 'Triceps',
+  biceps_brachii: 'Biceps', brachialis: 'Brachial ant.', triceps_brachii: 'Triceps',
+  // Avant-bras
+  brachioradialis: 'Brachio-radial', extensor_carpi_radialis: 'Ext. carpi rad.', extensor_carpi_ulnaris: 'Ext. carpi uln.',
+  flexor_carpi_radialis: 'Fléch. carpi rad.', flexor_carpi_ulnaris: 'Fléch. carpi uln.',
+  palmaris_longus: 'Palmaire long', pronator_teres: 'Rond pronateur', supinator: 'Supinateur',
+  wrist_flexors: 'Fléch. poignet', wrist_extensors: 'Ext. poignet',
   // Mollets
   gastrocnemius: 'Gastrocnémien', soleus: 'Soléaire',
   // Core
@@ -176,7 +182,7 @@ const SEARCH_MUSCLE_ALIASES: Array<{ terms: string[]; slugs: string[] }> = [
   { terms: ['deltoide', 'epaule', 'epaules', 'shoulder', 'coiffe'], slugs: ['deltoid_anterior', 'deltoid_lateral', 'deltoid_posterior', 'anterior_deltoid', 'medial_deltoid', 'posterior_deltoid', 'rotator_cuff', 'subscapularis'] },
   { terms: ['biceps brachii', 'biceps', 'bras avant'], slugs: ['biceps_brachii', 'brachialis', 'brachioradialis'] },
   { terms: ['triceps', 'bras arriere'], slugs: ['triceps_brachii'] },
-  { terms: ['avant bras', 'avant-bras', 'brachio', 'poignet'], slugs: ['brachioradialis', 'brachialis'] },
+  { terms: ['avant bras', 'avant-bras', 'forearm', 'brachio', 'poignet', 'wrist', 'pronation', 'supination', 'extenseur poignet', 'flechisseur poignet'], slugs: ['brachioradialis', 'extensor_carpi_radialis', 'extensor_carpi_ulnaris', 'flexor_carpi_radialis', 'flexor_carpi_ulnaris', 'palmaris_longus', 'pronator_teres', 'supinator', 'wrist_flexors', 'wrist_extensors'] },
   { terms: ['mollet', 'mollets', 'calf', 'calves', 'gastro', 'soleus', 'soleaire'], slugs: ['gastrocnemius', 'soleus'] },
   { terms: ['abdominaux', 'abdo', 'abdos', 'core', 'gainage', 'sangle', 'transverse', 'oblique', 'droit abdominal'], slugs: ['rectus_abdominis', 'lower_abs', 'obliques', 'transverse_abdominis', 'core', 'core_global'] },
   { terms: ['adducteur', 'adducteurs', 'interieur cuisse', 'intérieur cuisse'], slugs: ['adductors'] },

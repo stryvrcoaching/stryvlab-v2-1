@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Library, Plus } from "lucide-react";
 import { useClient } from "@/lib/client-context";
 import { useClientTopBar } from "@/components/clients/useClientTopBar";
@@ -32,6 +32,16 @@ export default function EntrainementPage() {
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Bloquer le scroll de la page quand le builder est ouvert
+  useEffect(() => {
+    if (selectedProgram) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [selectedProgram])
 
   const clientProfile: ClientProfile = useMemo(() => ({
     equipment_category: (client as any)?.equipment_category ?? null,
@@ -87,14 +97,15 @@ export default function EntrainementPage() {
   useClientTopBar(selectedProgram ? "" : "Entraînement", selectedProgram ? undefined : listTopBarRight);
 
   return (
-    <main className="min-h-screen bg-[#121212]">
-      <div className={selectedProgram ? "" : "px-6 pb-24"}>
+    <main className={selectedProgram ? "h-[calc(100vh-88px)] overflow-hidden bg-[#121212] flex flex-col" : "min-h-screen bg-[#121212]"}>
+      <div className={selectedProgram ? "flex-1 min-h-0 h-full" : "px-6 pb-24"}>
         {selectedProgram ? (
           <ProgramTemplateBuilder
             initial={selectedProgram}
             programId={selectedProgram.id}
             clientId={clientId}
             topBarLeft={builderTopBarLeft}
+            noFullscreen
             onSaved={(saved) => {
               setSelectedProgram((prev) =>
                 prev ? { ...prev, name: saved?.name ?? prev.name } : prev

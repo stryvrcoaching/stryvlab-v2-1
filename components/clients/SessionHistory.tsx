@@ -67,7 +67,8 @@ export default function SessionHistory({ clientId }: Props) {
     <div className="flex flex-col gap-3">
       {logs.map((log) => {
         const sets: any[] = log.client_set_logs ?? [];
-        const completedSets = sets.filter((s) => s.completed).length;
+        const effectiveSets = sets.filter((s) => s.completed || s.actual_reps != null);
+        const completedSets = sets.filter((s) => s.completed || s.actual_reps != null).length;
         const isOpen = expanded === log.id;
         const date = new Date(log.logged_at).toLocaleDateString("fr-FR", {
           weekday: "long",
@@ -105,7 +106,7 @@ export default function SessionHistory({ clientId }: Props) {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-xs font-bold text-white">
-                    {completedSets}/{sets.length} sets
+                    {completedSets}/{effectiveSets.length || sets.length} sets
                   </p>
                   {log.duration_min && (
                     <p className="text-[10px] text-white/45 flex items-center gap-1 justify-end">
@@ -128,12 +129,15 @@ export default function SessionHistory({ clientId }: Props) {
             </button>
 
             {isOpen && (
-              <div className="border-t border-white/40 p-4 flex flex-col gap-4">
+              <div className="border-t border-white/[0.06] p-4 flex flex-col gap-4">
                 {Object.entries(byExercise).map(([exName, exSets]) => {
+                  const doneSets = exSets.filter((s) => s.completed || s.actual_reps != null);
+                  if (doneSets.length === 0) return null;
                   const maxWeight = Math.max(
-                    ...exSets
+                    ...doneSets
                       .filter((s) => s.actual_weight_kg)
-                      .map((s) => s.actual_weight_kg),
+                      .map((s) => Number(s.actual_weight_kg)),
+                    0,
                   );
                   return (
                     <div key={exName}>
@@ -147,37 +151,29 @@ export default function SessionHistory({ clientId }: Props) {
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-col gap-1">
-                        {exSets
+                      <div className="flex flex-col">
+                        {doneSets
                           .sort((a, b) => a.set_number - b.set_number)
-                          .map((s) => (
+                          .map((s, i, arr) => (
                             <div
                               key={s.id}
-                              className={`flex items-center gap-3 py-1.5 px-3 rounded-lg text-xs ${s.completed ? "bg-green-50/40" : "bg-white/[0.04]/60"}`}
+                              className={`flex items-center gap-3 py-2 text-xs ${i < arr.length - 1 ? 'border-b border-white/[0.04]' : ''}`}
                             >
-                              <span className="font-mono text-white/45 w-4">
+                              <span className="font-mono text-white/25 w-4 shrink-0 text-[10px]">
                                 {s.set_number}
                               </span>
-                              <span
-                                className={`font-mono font-bold ${s.completed ? "text-white" : "text-white/45 line-through"}`}
-                              >
-                                {s.actual_reps ?? "—"} reps
+                              <span className="font-mono font-bold text-white tabular-nums">
+                                {s.actual_reps} <span className="text-white/35 font-normal">reps</span>
                               </span>
                               {s.actual_weight_kg && (
-                                <span className="font-mono text-white/45">
-                                  × {s.actual_weight_kg} kg
+                                <span className="font-mono text-white/55 tabular-nums">
+                                  × {s.actual_weight_kg} <span className="text-white/30">kg</span>
                                 </span>
                               )}
                               {s.rpe && (
-                                <span className="ml-auto text-[10px] text-white/45">
+                                <span className="ml-auto text-[10px] text-white/30 font-mono">
                                   RPE {s.rpe}
                                 </span>
-                              )}
-                              {s.completed && (
-                                <CheckCircle2
-                                  size={12}
-                                  className="text-green-500 ml-auto"
-                                />
                               )}
                             </div>
                           ))}
@@ -186,7 +182,7 @@ export default function SessionHistory({ clientId }: Props) {
                   );
                 })}
                 {log.notes && (
-                  <p className="text-xs text-white/45 italic border-t border-white/30 pt-3">
+                  <p className="text-xs text-white/45 italic border-t border-white/[0.06] pt-3">
                     {log.notes}
                   </p>
                 )}

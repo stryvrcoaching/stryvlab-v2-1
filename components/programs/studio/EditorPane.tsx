@@ -232,7 +232,7 @@ export default function EditorPane({
       </div>
 
       {/* Sessions + exercises scroll area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-6 pt-4 pb-40 space-y-4">
         {sessions.map((session, si) => (
           <div
             key={si}
@@ -336,6 +336,8 @@ export default function EditorPane({
                       alerts={alertsFor(si, ei)}
                       templateId={templateId}
                       supersetGroupColor={ex.group_id ? supersetGroupColors[ex.group_id] : undefined}
+                      groupSize={ex.group_id ? session.exercises.filter(e => e.group_id === ex.group_id).length : undefined}
+                      nextInSameGroup={!!(ex.group_id && session.exercises[ei + 1]?.group_id === ex.group_id)}
                       onUpdate={patch => onUpdateExercise(si, ei, patch)}
                       onRemove={() => onRemoveExercise(si, ei)}
                       onImageUpload={file => onImageUpload(si, ei, file)}

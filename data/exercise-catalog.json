@@ -2625,7 +2625,7 @@
     "name": "Curl biceps prise pronation bande élastique",
     "slug": "curl-biceps-prise-pronation-bande-elastique",
     "gifUrl": "/bibliotheque_exercices/biceps/curl-biceps-prise-pronation-bande-elastique.gif",
-    "muscleGroup": "biceps",
+    "muscleGroup": "avant_bras",
     "exerciseType": "exercise",
     "pattern": [
       "pull"
@@ -2636,7 +2636,7 @@
     ],
     "isCompound": false,
     "muscles": [
-      "biceps"
+      "avant_bras"
     ],
     "stimulus_coefficient": 0.55,
     "plane": "sagittal",
@@ -2909,7 +2909,7 @@
     "name": "Curl inversé barre",
     "slug": "curl-inverse-barre",
     "gifUrl": "/bibliotheque_exercices/biceps/curl-inverse-barre.gif",
-    "muscleGroup": "biceps",
+    "muscleGroup": "avant_bras",
     "exerciseType": "exercise",
     "pattern": [
       "pull"
@@ -2920,7 +2920,7 @@
     ],
     "isCompound": false,
     "muscles": [
-      "biceps"
+      "avant_bras"
     ],
     "stimulus_coefficient": 0.55,
     "plane": "sagittal",

@@ -190,6 +190,7 @@ function NutritionLogContent({
   const [searchQ, setSearchQ] = useState("")
   const [qMode, setQMode] = useState<"grams" | "portion">("grams")
   const [quantityG, setQuantityG] = useState<number>(100)
+  const [quantityInput, setQuantityInput] = useState<string>("100")
   const [selectedPortion, setSelectedPortion] = useState<number>(0)
   const [portionMult, setPortionMult] = useState<number>(1)
   const [scalingProfile, setScalingProfile] = useState<PortionScalingProfile | null>(null)
@@ -260,6 +261,12 @@ function NutritionLogContent({
     return () => ro.disconnect()
   }, [])
 
+  function applyQuantityG(next: number) {
+    const safe = Math.max(0, next)
+    setQuantityG(safe)
+    setQuantityInput(String(safe))
+  }
+
   function goTo(next: Layer, dir: number) { setDirection(dir); setLayer(next) }
   function selectCategory(cat: CategoryL1) { setSelectedCategory(cat); setSelectedSubcategory(null); goTo("subcategory", 1) }
   function selectSubcategory(sub: string) { setSelectedSubcategory(sub); setSearchQ(""); goTo("item", 1) }
@@ -267,10 +274,10 @@ function NutritionLogContent({
     setSelectedItem(item)
     const suggested = macroBalance ? suggestQuantityForItem(item, macroBalance.remaining) : null
     if (composerMode === "guide" && suggested) {
-      setQuantityG(suggested.grams)
+      applyQuantityG(suggested.grams)
       setDidAutoAdjust(true)
     } else {
-      setQuantityG(100)
+      applyQuantityG(100)
       setDidAutoAdjust(false)
     }
     setSelectedPortion(0)
@@ -328,12 +335,12 @@ function NutritionLogContent({
 
   function applyPortion(idx: number, mult: number = portionMult) {
     setSelectedPortion(idx)
-    setQuantityG(getScaledPortionG(PORTION_SIZES[idx], scalingProfile, mult))
+    applyQuantityG(getScaledPortionG(PORTION_SIZES[idx], scalingProfile, mult))
   }
 
   function applyMultiplier(mult: number) {
     setPortionMult(mult)
-    if (qMode === "portion") setQuantityG(getScaledPortionG(PORTION_SIZES[selectedPortion], scalingProfile, mult))
+    if (qMode === "portion") applyQuantityG(getScaledPortionG(PORTION_SIZES[selectedPortion], scalingProfile, mult))
   }
 
   function addToMeal() {
@@ -853,7 +860,7 @@ function NutritionLogContent({
                       </div>
                       <button
                         onClick={() => {
-                          setQuantityG(quantitySuggestion.grams)
+                          applyQuantityG(quantitySuggestion.grams)
                           setDidAutoAdjust(true)
                         }}
                         className="w-full h-10 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] transition-all"
@@ -915,7 +922,7 @@ function NutritionLogContent({
                       <div className="grid grid-cols-4 gap-2 text-center">
                         <button
                           onClick={() => {
-                            setQuantityG(quantitySuggestion.grams)
+                            applyQuantityG(quantitySuggestion.grams)
                             setDidAutoAdjust(true)
                           }}
                           className="col-span-2 h-10 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] transition-all"
@@ -1011,7 +1018,7 @@ function NutritionLogContent({
                         <p className="text-[10px] uppercase tracking-[0.12em] text-white/30 font-semibold mb-2">Quantite en grammes</p>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setQuantityG(v => Math.max(0, v - 5))}
+                            onClick={() => applyQuantityG(quantityG - 5)}
                             className="h-10 w-10 rounded-xl bg-white/[0.06] text-white/70 flex items-center justify-center"
                           >
                             <Minus size={14} />
@@ -1020,12 +1027,25 @@ function NutritionLogContent({
                             type="number"
                             min={0}
                             step={5}
-                            value={quantityG}
-                            onChange={e => setQuantityG(Math.max(0, Number(e.target.value || 0)))}
+                            value={quantityInput}
+                            onChange={e => {
+                              const nextValue = e.target.value
+                              setQuantityInput(nextValue)
+                              if (nextValue === "") {
+                                setQuantityG(0)
+                                return
+                              }
+                              const parsed = Number(nextValue)
+                              setQuantityG(Number.isFinite(parsed) ? Math.max(0, parsed) : 0)
+                            }}
+                            onBlur={() => {
+                              if (quantityInput === "") return
+                              applyQuantityG(quantityG)
+                            }}
                             className="flex-1 h-10 bg-white/[0.06] rounded-xl text-center text-[16px] font-bold text-white outline-none"
                           />
                           <button
-                            onClick={() => setQuantityG(v => v + 5)}
+                            onClick={() => applyQuantityG(quantityG + 5)}
                             className="h-10 w-10 rounded-xl bg-white/[0.06] text-white/70 flex items-center justify-center"
                           >
                             <Plus size={14} />

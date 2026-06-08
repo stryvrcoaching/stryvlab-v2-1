@@ -2,7 +2,15 @@ import { Resend } from 'resend'
 
 // ─── Transport ────────────────────────────────────────────────────────────────
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY
+
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is required to send emails')
+  }
+
+  return new Resend(apiKey)
+}
 
 async function sendMail(options: {
   from: string
@@ -11,6 +19,8 @@ async function sendMail(options: {
   html: string
   attachments?: { filename: string; content: Buffer; contentType: string }[]
 }) {
+  const resend = getResendClient()
+
   await resend.emails.send({
     from: options.from,
     to: options.to,
@@ -564,4 +574,3 @@ export async function sendCoachAlertEmail(params: SendCoachAlertEmailParams) {
     }),
   })
 }
-

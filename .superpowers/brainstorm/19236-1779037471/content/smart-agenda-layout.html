@@ -1,0 +1,75 @@
+<h2>Smart Agenda — Hiérarchie des sections</h2>
+<p class="subtitle">Quelle organisation du flux principal (haut → bas) ?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="background:#0d0d0d;padding:8px;">
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px;margin-bottom:6px;color:#ffe01e;font-size:10px;">🔔 Notifications coach + système</div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:6px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">SMART NUTRITION</div>
+          <div style="color:#666;font-size:9px;margin-top:4px;">Demi-cercle calorique + P/L/G + Hydratation</div>
+          <div style="text-align:center;margin-top:6px;font-size:18px;color:#ffe01e;">◜◝</div>
+        </div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:6px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">SMART WORKOUT — Aujourd'hui</div>
+          <div style="color:#666;font-size:9px;margin-top:4px;">Résumé séance (clic → page workout)</div>
+        </div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">AGENDA — Logs du jour</div>
+          <div style="color:#666;font-size:9px;margin-top:4px;">Timeline repas / séance / eau / check-in</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Ordre proposé</h3>
+      <p>Notifs → Nutrition → Workout → Timeline logs</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="background:#0d0d0d;padding:8px;">
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px;margin-bottom:6px;color:#ffe01e;font-size:10px;">🔔 Notifications</div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:6px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">SMART WORKOUT — Aujourd'hui</div>
+          <div style="color:#666;font-size:9px;margin-top:4px;">Résumé séance d'abord</div>
+        </div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:6px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">SMART NUTRITION</div>
+          <div style="color:#666;font-size:9px;margin-top:4px;">Demi-cercle + macros + hydra</div>
+          <div style="text-align:center;margin-top:6px;font-size:18px;color:#ffe01e;">◜◝</div>
+        </div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">AGENDA — Logs du jour</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Workout avant Nutrition</h3>
+      <p>Notifs → Workout → Nutrition → Timeline</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="background:#0d0d0d;padding:8px;">
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:6px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">SMART NUTRITION</div>
+          <div style="text-align:center;margin-top:6px;font-size:18px;color:#ffe01e;">◜◝</div>
+        </div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:6px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">SMART WORKOUT — Aujourd'hui</div>
+        </div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px;margin-bottom:6px;color:#ffe01e;font-size:10px;">🔔 Notifications (inline, plus discret)</div>
+        <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;">
+          <div style="color:#fff;font-size:11px;font-weight:600;">AGENDA — Logs du jour</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Notifs en 3<sup>ème</sup></h3>
+      <p>Nutrition → Workout → Notifs → Timeline. Notifs visibles seulement si présentes.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,88 @@
+<h2>Smart Workout Widget — Résumé séance du jour</h2>
+<p class="subtitle">Au clic → redirige vers /client/programme (page workout existante)</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">A — Card large avec BodyMap mini</div>
+    <div class="mockup-body" style="background:#0d0d0d;padding:14px;">
+      <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+          <div style="color:#fff;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;">SÉANCE DU JOUR</div>
+          <div style="color:rgba(255,255,255,0.4);font-size:10px;">→</div>
+        </div>
+
+        <div style="display:flex;gap:14px;">
+          <div style="flex:1;">
+            <div style="color:#fff;font-size:18px;font-weight:900;letter-spacing:-0.02em;">Push Force</div>
+            <div style="color:rgba(255,255,255,0.5);font-size:11px;margin-top:4px;">8 exercices · ~58 min</div>
+
+            <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
+              <span style="background:rgba(255,224,30,0.1);color:#ffe01e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:0.1em;">Pectoraux</span>
+              <span style="background:rgba(255,224,30,0.1);color:#ffe01e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:0.1em;">Épaules</span>
+              <span style="background:rgba(255,224,30,0.1);color:#ffe01e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:0.1em;">Triceps</span>
+            </div>
+
+            <button style="margin-top:14px;width:100%;background:#ffe01e;color:#0d0d0d;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:10px;border-radius:10px;border:none;">Démarrer →</button>
+          </div>
+
+          <div style="width:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 60 100" style="width:80px;height:120px;">
+              <circle cx="30" cy="12" r="8" fill="rgba(255,255,255,0.1)"/>
+              <rect x="22" y="22" width="16" height="24" rx="4" fill="#ffe01e"/>
+              <rect x="14" y="24" width="8" height="20" rx="3" fill="#ffe01e" opacity="0.6"/>
+              <rect x="38" y="24" width="8" height="20" rx="3" fill="#ffe01e" opacity="0.6"/>
+              <rect x="22" y="48" width="16" height="22" rx="3" fill="rgba(255,255,255,0.06)"/>
+              <rect x="24" y="72" width="5" height="22" rx="2" fill="rgba(255,255,255,0.06)"/>
+              <rect x="31" y="72" width="5" height="22" rx="2" fill="rgba(255,255,255,0.06)"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">B — Card compacte sans BodyMap</div>
+    <div class="mockup-body" style="background:#0d0d0d;padding:14px;">
+      <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+          <div style="color:#fff;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;">SÉANCE DU JOUR</div>
+          <div style="color:rgba(255,255,255,0.4);font-size:10px;">→</div>
+        </div>
+
+        <div style="color:#fff;font-size:20px;font-weight:900;letter-spacing:-0.02em;">Push Force</div>
+        <div style="color:rgba(255,255,255,0.5);font-size:11px;margin-top:4px;">8 exercices · ~58 min · Pectoraux, Épaules, Triceps</div>
+
+        <button style="margin-top:14px;width:100%;background:#ffe01e;color:#0d0d0d;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:12px;border-radius:10px;border:none;">Démarrer →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:24px;">
+  <div class="mockup-header">État alternatif — Pas de séance prévue</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:14px;max-width:400px;">
+    <div style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:18px;">
+      <div style="color:#fff;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:12px;">SÉANCE DU JOUR</div>
+      <div style="color:rgba(255,255,255,0.5);font-size:12px;">Jour de repos — pas de séance prévue</div>
+      <button style="margin-top:10px;background:transparent;color:#ffe01e;font-size:10px;font-weight:700;padding:6px 0;border:none;letter-spacing:0.1em;text-transform:uppercase;">+ Logger activité libre →</button>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top:24px;">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>A — Avec BodyMap miniature</h3>
+      <p>Plus visuel, on voit immédiatement quels muscles ciblés. ~150px de haut.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>B — Sans BodyMap, juste pills muscles</h3>
+      <p>Plus compact. ~110px de haut. Laisse plus de place à la timeline en dessous.</p>
+    </div>
+  </div>
+</div>
